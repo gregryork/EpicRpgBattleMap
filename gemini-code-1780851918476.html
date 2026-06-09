@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epic D&D Finale Battlemap</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --panel-color: #2d2d2d;
+            --text-color: #e0e0e0;
+            --accent-color: #9a3333;
+            /* Dynamic token base unit size modified by the slider */
+            --grid-unit: 40px; 
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar Control Panel */
+        #control-panel {
+            width: 320px;
+            background-color: var(--panel-color);
+            padding: 15px;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 100;
+            flex-shrink: 0;
+            overflow-y: auto;
+            box-sizing: border-box; /* FIX: Prevents sidebar width calculation bloat */
+        }
+
+        /* FIX: Forces all child elements inside the sidebar to respect their parents' boundaries */
+        #control-panel * {
+            box-sizing: border-box;
+        }
+
+        h2, h3 {
+            margin: 0;
+            color: #fff;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 3px;
+            width: 100%;
+        }
+
+        h3 { font-size: 1.1rem; margin-top: 5px;}
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            width: 100%;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+        }
+        
+        /* FIX: Forces inner inputs to shrink and share the columns evenly without popping out */
+        .input-row .input-group { 
+            flex: 1; 
+            min-width: 0; 
+        }
+
+        label {
+            font-size: 0.85rem;
+            color: #aaa;
+            font-weight: bold;
+        }
+
+        input, select, button {
+            padding: 6px 8px;
+            border-radius: 4px;
+            border: 1px solid #444;
+            background-color: #111;
+            color: #fff;
+            font-size: 0.9rem;
+            width: 100%; /* FIX: Fits content perfectly flush inside available space */
+            max-width: 100%;
+        }
+
+        input[type="range"] {
+            background: transparent;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        button {
+            background-color: var(--accent-color);
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+            border: none;
+        }
+
+        button:hover { background-color: #b33b3b; }
+        .spell-btn { background-color: #3a6073; }
+        .spell-btn:hover { background-color: #4a7a93; }
+
+        .zoom-controls { display: flex; gap: 8px; width: 100%; }
+        .zoom-controls button { flex: 1; padding: 4px; font-size: 0.8rem;}
+
+        /* Map Sandbox Viewport */
+        #map-container {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+            background-color: #111;
+            cursor: default;
+        }
+
+        #map-container.drag-over {
+            background-color: #221515;
+            box-shadow: inset 0 0 50px rgba(154, 51, 51, 0.5);
+        }
+
+        #map-placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.3rem;
+            color: #777;
+            text-align: center;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        #battlemap-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: 0 0;
+            z-index: 2;
+            display: none; 
+        }
+
+        #map-img {
+            display: block;
+            pointer-events: none; 
+            max-width: none;
+            max-height: none;
+        }
+
+        /* --- TOKENS --- */
+        .token {
+            position: absolute;
+            border-radius: 50%;
+            cursor: move;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px black;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.7);
+            user-select: none;
+            border: 3px solid white;
+            z-index: 20;
+            box-sizing: border-box;
+            font-size: calc(var(--grid-unit) * 0.35);
+            
+            width: calc(var(--grid-unit) * var(--size-multiplier, 1));
+            height: calc(var(--grid-unit) * var(--size-multiplier, 1));
+        }
+
+        .token.friendly { background-color: #2e7d32; border-color: #a5d6a7; }
+        .token.hostile { background-color: #c62828; border-color: #ef9a9a; }
+        .token.neutral { background-color: #f57c00; border-color: #ffe082; }
+
+        /* --- SPELL EFFECT TEMPLATES --- */
+        .spell-template {
+            position: absolute;
+            cursor: move;
+            z-index: 10;
+            box-sizing: border-box;
+            border: 2px dashed #fff;
+            box-shadow: 0 0 15px rgba(255,255,255,0.2);
+            opacity: 0.6;
+            
+            width: calc(var(--grid-unit) * var(--w-units));
+            height: calc(var(--grid-unit) * var(--h-units));
+        }
+        
+        .spell-template.circle { border-radius: 50%; }
+        .spell-template.cone { clip-path: polygon(50% 0%, 0% 100%, 100% 100%); }
+
+        .spell-template.fire { background-color: rgba(230, 81, 0, 0.7); border-color: #ffb74d; }
+        .spell-template.cold { background-color: rgba(2, 136, 209, 0.6); border-color: #81d4fa; }
+        .spell-template.acid { background-color: rgba(104, 159, 56, 0.6); border-color: #dcedc8; }
+        .spell-template.lightning { background-color: rgba(251, 192, 45, 0.6); border-color: #fff9c4; }
+
+        /* Tooltip Mechanics */
+        .tooltip {
+            visibility: hidden;
+            width: 180px;
+            background-color: rgba(10, 10, 10, 0.95);
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1000;
+            bottom: 110%; 
+            left: 50%;
+            margin-left: -90px;
+            opacity: 0;
+            transition: opacity 0.15s;
+            pointer-events: none;
+            font-size: 0.85rem;
+            border: 1px solid #555;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.6);
+            transform-origin: bottom center;
+            font-family: sans-serif;
+            text-shadow: none;
+            font-weight: normal;
+        }
+
+        .token:hover .tooltip, .spell-template:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        body.panning-mode #map-container { cursor: grab; }
+        body.panning-mode #map-container:active { cursor: grabbing; }
+    </style>
+</head>
+<body>
+
+    <div id="control-panel">
+        <h2>DM Workspace</h2>
+        
+        <div class="input-group">
+            <label for="grid-slider">Grid/Token Scale Alignment</label>
+            <input type="range" id="grid-slider" min="15" max="120" value="40">
+        </div>
+
+        <div class="input-group">
+            <label>Map Controls</label>
+            <div class="zoom-controls">
+                <button id="zoom-in-btn">In</button>
+                <button id="zoom-out-btn">Out</button>
+                <button id="zoom-reset-btn">Reset</button>
+            </div>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #444; width: 100%; margin: 2px 0;">
+
+        <h3>Spawn Creature</h3>
+        <div class="input-row">
+            <div class="input-group">
+                <label for="token-name">Initials</label>
+                <input type="text" id="token-name" placeholder="M" maxlength="3">
+            </div>
+            <div class="input-group">
+                <label for="token-size">Size</label>
+                <select id="token-size">
+                    <option value="1">Medium (1x1)</option>
+                    <option value="2">Large (2x2)</option>
+                    <option value="3">Huge (3x3)</option>
+                    <option value="4">Gargantuan (4x4)</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <label for="token-desc">Description</label>
+            <input type="text" id="token-desc" placeholder="Manshoon, Evil Wizard">
+        </div>
+
+        <div class="input-group">
+            <label for="token-faction">Faction</label>
+            <select id="token-faction">
+                <option value="friendly">Player / Ally (Green)</option>
+                <option value="hostile">Enemy (Red)</option>
+                <option value="neutral">Neutral (Orange)</option>
+            </select>
+        </div>
+
+        <button id="add-token-btn">Spawn Token</button>
+        
+        <hr style="border: 0; border-top: 1px solid #444; width: 100%; margin: 2px 0;">
+
+        <h3>Spell AoE Templates</h3>
+        <div class="input-row">
+            <div class="input-group">
+                <label for="spell-shape">Shape</label>
+                <select id="spell-shape">
+                    <option value="circle">Radius / Sphere</option>
+                    <option value="cube">Cube / Square</option>
+                    <option value="cone">Cone (Face Down)</option>
+                    <option value="line">Line (Wall / Beam)</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="spell-size">Size (Feet)</label>
+                <select id="spell-size">
+                    <option value="5">5 ft</option>
+                    <option value="10">10 ft</option>
+                    <option value="15">15 ft</option>
+                    <option value="20" selected>20 ft</option>
+                    <option value="30">30 ft</option>
+                    <option value="40">40 ft</option>
+                    <option value="60">60 ft</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="input-row">
+            <div class="input-group">
+                <label for="spell-element">Element / Type</label>
+                <select id="spell-element">
+                    <option value="fire">Fire / Evocation</option>
+                    <option value="cold">Cold / Ice</option>
+                    <option value="acid">Acid / Poison</option>
+                    <option value="lightning">Lightning / Force</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="spell-label">Spell Label</label>
+                <input type="text" id="spell-label" placeholder="Fireball" style="padding: 5px;">
+            </div>
+        </div>
+
+        <button id="add-spell-btn" class="spell-btn">Cast Template</button>
+        
+        <p style="font-size: 0.75rem; color: #aaa; margin-top: auto; line-height: 1.3; background: #222; padding: 6px; border-radius: 4px; width: 100%;">
+            • <strong>Align Grid:</strong> Adjust the top slider until tokens cleanly fit the map squares.<br>
+            • <strong>Pan view:</strong> Hold <code>Spacebar</code> and drag background.<br>
+            • <strong>Delete anything:</strong> Double-click item.
+        </p>
+    </div>
+
+    <div id="map-container">
+        <div id="map-placeholder">
+            <strong>DRAG & DROP YOUR MAP HERE</strong><br>
+            <span style="font-size: 0.9rem; color: #666;">Drop your floorplan PNG file anywhere into this area.</span>
+        </div>
+        
+        <div id="battlemap-canvas">
+            <img id="map-img" src="" alt="">
+        </div>
+    </div>
+
+    <script>
+        const mapImg = document.getElementById('map-img');
+        const battlemapCanvas = document.getElementById('battlemap-canvas');
+        const mapPlaceholder = document.getElementById('map-placeholder');
+        const mapContainer = document.getElementById('map-container');
+        const gridSlider = document.getElementById('grid-slider');
+        
+        const addTokenBtn = document.getElementById('add-token-btn');
+        const addSpellBtn = document.getElementById('add-spell-btn');
+
+        // State Engines
+        let isMapActive = false;
+        let scale = 1;
+        let panX = 10;
+        let panY = 10;
+        
+        let isSpacePressed = false;
+        let isPanning = false;
+        let startX, startY;
+
+        // Apply visual transformation matrix parameters
+        function applyTransformations() {
+            battlemapCanvas.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+            
+            // Normalize popups across zooms
+            const tooltips = document.querySelectorAll('.tooltip');
+            tooltips.forEach(tl => {
+                tl.style.transform = `scale(${1 / scale})`;
+            });
+        }
+
+        // --- LOCAL STORAGE STATE SAVE ENGINE ---
+        function saveBoardToStorage() {
+            const tokensData = [];
+            document.querySelectorAll('.token').forEach(token => {
+                tokensData.push({
+                    name: token.childNodes[0].textContent,
+                    desc: token.querySelector('.tooltip').innerHTML.split('<br>')[2] || '',
+                    faction: Array.from(token.classList).find(c => c !== 'token'),
+                    size: token.style.getPropertyValue('--size-multiplier'),
+                    top: token.style.top,
+                    left: token.style.left
+                });
+            });
+
+            const spellsData = [];
+            document.querySelectorAll('.spell-template').forEach(spell => {
+                const classes = Array.from(spell.classList);
+                spellsData.push({
+                    label: spell.querySelector('.tooltip strong').innerText,
+                    shape: classes.find(c => ['circle','cube','cone','line'].includes(c)),
+                    element: classes.find(c => ['fire','cold','acid','lightning'].includes(c)),
+                    wUnits: spell.style.getPropertyValue('--w-units'),
+                    hUnits: spell.style.getPropertyValue('--h-units'),
+                    sizeFeet: spell.querySelector('.tooltip').innerHTML.split('<br>')[1].replace('ft ', ''),
+                    top: spell.style.top,
+                    left: spell.style.left
+                });
+            });
+
+            const state = {
+                scale: scale,
+                panX: panX,
+                panY: panY,
+                gridUnit: gridSlider.value,
+                tokens: tokensData,
+                spells: spellsData
+            };
+
+            localStorage.setItem('dnd_battlemap_state', JSON.stringify(state));
+        }
+
+        function loadBoardFromStorage() {
+            const raw = localStorage.getItem('dnd_battlemap_state');
+            if (!raw) return;
+
+            try {
+                const state = JSON.parse(raw);
+                if (state.gridUnit) {
+                    gridSlider.value = state.gridUnit;
+                    document.documentElement.style.setProperty('--grid-unit', state.gridUnit + 'px');
+                }
+                
+                scale = state.scale || 1;
+                panX = state.panX || 10;
+                panY = state.panY || 10;
+
+                if (state.tokens) {
+                    state.tokens.forEach(t => instantiateTokenElement(t.name, t.desc, t.faction, t.size, t.top, t.left));
+                }
+                if (state.spells) {
+                    state.spells.forEach(s => instantiateSpellElement(s.shape, parseInt(s.sizeFeet), s.element, s.label, s.wUnits, s.hUnits, s.top, s.left));
+                }
+                applyTransformations();
+            } catch (err) {
+                console.error("Could not parse saved storage data logs.", err);
+            }
+        }
+
+        // --- GRID SLIDER REAL-TIME UPDATE ---
+        gridSlider.addEventListener('input', function() {
+            document.documentElement.style.setProperty('--grid-unit', this.value + 'px');
+            applyTransformations();
+            saveBoardToStorage();
+        });
+
+        // --- GLOBAL REDIRECT PROTECTION LOCKS ---
+        window.addEventListener('dragover', e => e.preventDefault(), false);
+        window.addEventListener('drop', e => e.preventDefault(), false);
+
+        // --- MAP DROP SYSTEM CONTAINER ---
+        mapContainer.addEventListener('dragover', e => { e.preventDefault(); mapContainer.classList.add('drag-over'); });
+        mapContainer.addEventListener('dragleave', () => mapContainer.classList.remove('drag-over'));
+        mapContainer.addEventListener('drop', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            mapContainer.classList.remove('drag-over');
+
+            const file = e.dataTransfer.files[0];
+            if (file && (file.type === "image/png" || file.type === "image/jpeg")) {
+                if (mapImg.src && mapImg.src.startsWith('blob:')) {
+                    URL.revokeObjectURL(mapImg.src);
+                }
+
+                mapImg.src = URL.createObjectURL(file);
+                mapImg.onload = function() {
+                    mapPlaceholder.style.display = 'none';
+                    battlemapCanvas.style.display = 'block';
+                    isMapActive = true;
+                    applyTransformations();
+                    saveBoardToStorage();
+                };
+            }
+        });
+
+        // --- VIEWPORT SCROLL WHEEL ZOOM ---
+        function runZoom(factor, clientX = null, clientY = null) {
+            if (!isMapActive) return;
+            const oldScale = scale;
+            scale *= factor;
+            if (scale < 0.08) scale = 0.08;
+            if (scale > 6) scale = 6;
+
+            if (clientX !== null && clientY !== null) {
+                const rect = mapContainer.getBoundingClientRect();
+                const mouseX = clientX - rect.left;
+                const mouseY = clientY - rect.top;
+                panX = mouseX - (mouseX - panX) * (scale / oldScale);
+                panY = mouseY - (mouseY - panY) * (scale / oldScale);
+            }
+            applyTransformations();
+            saveBoardToStorage();
+        }
+
+        mapContainer.addEventListener('wheel', e => {
+            if (!isMapActive) return;
+            e.preventDefault();
+            runZoom(e.deltaY < 0 ? 1.1 : 0.9, e.clientX, e.clientY);
+        }, { passive: false });
+
+        document.getElementById('zoom-in-btn').addEventListener('click', () => runZoom(1.2));
+        document.getElementById('zoom-out-btn').addEventListener('click', () => runZoom(0.8));
+        document.getElementById('zoom-reset-btn').addEventListener('click', () => {
+            if (!isMapActive) return;
+            scale = 1; panX = 10; panY = 10; applyTransformations(); saveBoardToStorage();
+        });
+
+        // --- MAP CAMERA SPACEBAR PANNING ---
+        window.addEventListener('keydown', e => {
+            if (e.code === 'Space' && document.activeElement.tagName !== 'INPUT') {
+                e.preventDefault(); isSpacePressed = true; document.body.classList.add('panning-mode');
+            }
+        });
+        window.addEventListener('keyup', e => {
+            if (e.code === 'Space') { isSpacePressed = false; isPanning = false; document.body.classList.remove('panning-mode'); }
+        });
+        mapContainer.addEventListener('mousedown', e => {
+            if (isSpacePressed) { isPanning = true; startX = e.clientX - panX; startY = e.clientY - panY; e.preventDefault(); }
+        });
+        window.addEventListener('mousemove', e => {
+            if (isPanning && isSpacePressed) { panX = e.clientX - startX; panY = e.clientY - startY; applyTransformations(); }
+        });
+        window.addEventListener('mouseup', () => { isPanning = false; saveBoardToStorage(); });
+
+        // --- CREATURE TOKEN ELEMENT INSTANTIATION ---
+        function instantiateTokenElement(name, desc, faction, sizeMultiplier, top = '50px', left = '50px') {
+            const token = document.createElement('div');
+            token.classList.add('token', faction);
+            token.innerText = name.toUpperCase();
+            
+            token.style.setProperty('--size-multiplier', sizeMultiplier);
+            token.style.top = top;
+            token.style.left = left;
+
+            const tooltip = document.createElement('span');
+            tooltip.classList.add('tooltip');
+            tooltip.innerHTML = `<strong>${name}</strong><br>(${getSizeText(sizeMultiplier)})<br>${desc}`;
+            token.appendChild(tooltip);
+
+            token.addEventListener('dblclick', e => {
+                e.stopPropagation();
+                if (confirm(`Remove "${name}"?`)) {
+                    token.remove();
+                    saveBoardToStorage();
+                }
+            });
+
+            bindDragEngine(token);
+            battlemapCanvas.appendChild(token);
+        }
+
+        addTokenBtn.addEventListener('click', () => {
+            if (!isMapActive) return alert("Please drop a map file into the canvas box layout first.");
+
+            const nameIn = document.getElementById('token-name');
+            const descIn = document.getElementById('token-desc');
+            const sizeMultiplier = document.getElementById('token-size').value;
+            const faction = document.getElementById('token-faction').value;
+
+            const name = nameIn.value.trim() || '??';
+            const desc = descIn.value.trim() || 'No context stats.';
+
+            instantiateTokenElement(name, desc, faction, sizeMultiplier);
+            applyTransformations();
+            saveBoardToStorage();
+
+            nameIn.value = ''; descIn.value = '';
+        });
+
+        function getSizeText(val) {
+            if (val === "1") return "Medium";
+            if (val === "2") return "Large";
+            if (val === "3") return "Huge";
+            return "Gargantuan";
+        }
+
+        // --- SPELL AoE ELEMENT INSTANTIATION ---
+        function instantiateSpellElement(shape, sizeFeet, element, label, wUnits, hUnits, top = '100px', left = '100px') {
+            const template = document.createElement('div');
+            template.classList.add('spell-template', shape, element);
+            
+            template.style.setProperty('--w-units', wUnits);
+            template.style.setProperty('--h-units', hUnits);
+            template.style.top = top;
+            template.style.left = left;
+
+            const tooltip = document.createElement('span');
+            tooltip.classList.add('tooltip');
+            tooltip.innerHTML = `<strong>${label}</strong><br>${sizeFeet}ft ${shape}<br>Double click to remove`;
+            template.appendChild(tooltip);
+
+            template.addEventListener('dblclick', e => {
+                e.stopPropagation();
+                if (confirm(`Remove effect template "${label}"?`)) {
+                    template.remove();
+                    saveBoardToStorage();
+                }
+            });
+
+            bindDragEngine(template);
+            battlemapCanvas.appendChild(template);
+        }
+
+        addSpellBtn.addEventListener('click', () => {
+            if (!isMapActive) return alert("Load a map layout workspace before casting spells!");
+
+            const shape = document.getElementById('spell-shape').value;
+            const sizeFeet = parseInt(document.getElementById('spell-size').value);
+            const element = document.getElementById('spell-element').value;
+            const label = document.getElementById('spell-label').value.trim() || 'Spell Effect';
+
+            let gridUnits = sizeFeet / 5;
+            let widthUnits = gridUnits;
+            let heightUnits = gridUnits;
+
+            if (shape === 'circle') {
+                widthUnits = gridUnits * 2;
+                heightUnits = gridUnits * 2;
+            } else if (shape === 'line') {
+                widthUnits = gridUnits;
+                heightUnits = 1;
+            }
+
+            instantiateSpellElement(shape, sizeFeet, element, label, widthUnits, heightUnits);
+            applyTransformations();
+            saveBoardToStorage();
+        });
+
+        // --- WORKSPACE DRAG CONTROLLER ENGINE ---
+        function bindDragEngine(element) {
+            let m1 = 0, m2 = 0, m3 = 0, m4 = 0;
+            element.onmousedown = startDrag;
+
+            function startDrag(e) {
+                if (isSpacePressed) return;
+                e = e || window.event;
+                e.stopPropagation();
+                e.preventDefault();
+                m3 = e.clientX; m4 = e.clientY;
+                document.onmouseup = stopDrag;
+                document.onmousemove = moveDrag;
+            }
+
+            function moveDrag(e) {
+                e = e || window.event;
+                e.preventDefault();
+                m1 = m3 - e.clientX; m2 = m4 - e.clientY;
+                m3 = e.clientX; m4 = e.clientY;
+
+                let targetTop = element.offsetTop - (m2 / scale);
+                let targetLeft = element.offsetLeft - (m1 / scale);
+
+                if (targetTop < 0) targetTop = 0;
+                if (targetLeft < 0) targetLeft = 0;
+
+                element.style.top = targetTop + "px";
+                element.style.left = targetLeft + "px";
+            }
+
+            function stopDrag() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+                saveBoardToStorage();
+            }
+        }
+
+        // --- RUN INITIAL DATA RECOVERY CHECKS ---
+        window.onload = function() {
+            loadBoardFromStorage();
+            if(document.querySelectorAll('.token, .spell-template').length > 0) {
+                battlemapCanvas.style.display = 'block';
+            }
+        };
+    </script>
+</body>
+</html>
