@@ -65,7 +65,7 @@ const Sidebar = ({
           type="range"
           id="grid-slider"
           min="15"
-          max="120"
+          max="360"
           value={gridUnit}
           onChange={(e) => setGridUnit(parseInt(e.target.value, 10))}
         />
@@ -107,6 +107,9 @@ const Sidebar = ({
               <option value="2">Large (2x2)</option>
               <option value="3">Huge (3x3)</option>
               <option value="4">Gargantuan (4x4)</option>
+              <option value="6">Colossal (6x6)</option>
+              <option value="8">Titanic (8x8)</option>
+              <option value="12">Behemoth (12x12)</option>
             </select>
           </div>
         </div>

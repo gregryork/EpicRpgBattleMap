@@ -66,6 +66,9 @@ const Token = ({
       case '2': return 'Large';
       case '3': return 'Huge';
       case '4': return 'Gargantuan';
+      case '6': return 'Colossal';
+      case '8': return 'Titanic';
+      case '12': return 'Behemoth';
       default: return 'Medium';
     }
   };

@@ -14,7 +14,7 @@ const getInitialBoardState = () => {
         scale: parsed.scale ?? 1,
         panX: parsed.panX ?? 10,
         panY: parsed.panY ?? 10,
-        gridUnit: parsed.gridUnit ? parseInt(parsed.gridUnit, 10) : 40,
+        gridUnit: parsed.gridUnit ? parseInt(parsed.gridUnit, 10) : 60,
         tokens: parsed.tokens ?? [],
         spells: parsed.spells ?? [],
       };
@@ -26,7 +26,7 @@ const getInitialBoardState = () => {
     scale: 1,
     panX: 10,
     panY: 10,
-    gridUnit: 40,
+    gridUnit: 60,
     tokens: [],
     spells: [],
   };
