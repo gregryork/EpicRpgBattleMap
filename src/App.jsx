@@ -74,6 +74,14 @@ function App() {
 
   // UI state
   const [isSpacePressed, setIsSpacePressed] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    const saved = localStorage.getItem('isSidebarOpen');
+    return saved !== 'false';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('isSidebarOpen', String(isSidebarOpen));
+  }, [isSidebarOpen]);
 
   // Active Map helper getter
   const activeMap =
@@ -348,7 +356,18 @@ function App() {
         onCreateMap={handleCreateMap}
         onRenameMap={handleRenameMap}
         onDeleteMap={handleDeleteMap}
+        isOpen={isSidebarOpen}
       />
+
+      <button
+        type="button"
+        className={`sidebar-toggle ${isSidebarOpen ? '' : 'collapsed'}`}
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        title={isSidebarOpen ? 'Hide Sidebar' : 'Show Sidebar'}
+        aria-label={isSidebarOpen ? 'Hide Sidebar' : 'Show Sidebar'}
+      >
+        <span className="toggle-icon">◀</span>
+      </button>
 
       <MapViewport
         mapImage={mapImage}
