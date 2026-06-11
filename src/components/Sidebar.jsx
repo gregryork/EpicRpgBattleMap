@@ -309,14 +309,17 @@ const Sidebar = ({
                 />
                 <button
                   type="submit"
+                  disabled={!sidebarUrl.trim()}
                   style={{
                     width: 'auto',
                     padding: '6px 10px',
-                    background: 'var(--accent-color)',
+                    background: sidebarUrl.trim() ? 'var(--accent-color)' : 'rgba(255, 255, 255, 0.05)',
+                    color: sidebarUrl.trim() ? '#ffffff' : 'var(--text-muted)',
                     border: 'none',
                     borderRadius: '6px',
                     fontSize: '0.8rem',
-                    cursor: 'pointer',
+                    cursor: sidebarUrl.trim() ? 'pointer' : 'not-allowed',
+                    opacity: sidebarUrl.trim() ? 1 : 0.6,
                   }}
                 >
                   Load

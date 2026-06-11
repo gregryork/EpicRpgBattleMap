@@ -93,11 +93,12 @@ const MapViewport = ({
     };
 
     const handleTouchStart = (e) => {
-      // Ignore if touching a token/spell/status picker (let their listeners handle it)
+      // Ignore if touching a token/spell/status picker/placeholder (let their listeners handle it)
       if (
         e.target.closest('.token') ||
         e.target.closest('.spell-template') ||
-        e.target.closest('.status-picker-menu')
+        e.target.closest('.status-picker-menu') ||
+        e.target.closest('.map-placeholder')
       ) {
         return;
       }
@@ -242,7 +243,7 @@ const MapViewport = ({
       onMouseDown={handleMouseDown}
     >
       {!mapImage && (
-        <div className="map-placeholder" onPointerDown={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
+        <div className="map-placeholder">
           <strong>DRAG & DROP YOUR MAP HERE</strong>
           <br />
           <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
@@ -283,14 +284,17 @@ const MapViewport = ({
               />
               <button
                 type="submit"
+                disabled={!urlInput.trim()}
                 style={{
                   width: 'auto',
                   padding: '8px 14px',
-                  background: 'var(--accent-color)',
+                  background: urlInput.trim() ? 'var(--accent-color)' : 'rgba(255, 255, 255, 0.05)',
+                  color: urlInput.trim() ? '#ffffff' : 'var(--text-muted)',
                   border: 'none',
                   borderRadius: '6px',
-                  cursor: 'pointer',
+                  cursor: urlInput.trim() ? 'pointer' : 'not-allowed',
                   fontWeight: '600',
+                  opacity: urlInput.trim() ? 1 : 0.6,
                 }}
               >
                 Load

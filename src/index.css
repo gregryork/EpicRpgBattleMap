@@ -311,6 +311,11 @@ button:active {
   max-width: 80%;
 }
 
+.map-placeholder button,
+.map-placeholder input {
+  pointer-events: auto;
+}
+
 .map-placeholder strong {
   font-family: 'Cinzel', serif;
   color: #fff;
