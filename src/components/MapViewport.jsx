@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { DEFAULT_MAPS } from '../utils/constants';
 
 const MapViewport = ({
   mapImage,
@@ -339,6 +340,52 @@ const MapViewport = ({
               </button>
             </form>
           </div>
+
+          <div style={{ margin: '5px 0 15px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }} onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', letterSpacing: '0.5px', fontWeight: '600' }}>— OR CHOOSE A DEFAULT MAP —</span>
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'center',
+              marginTop: '4px'
+            }}>
+              {DEFAULT_MAPS.map((map) => (
+                <button
+                  key={map.id}
+                  type="button"
+                  onClick={() => onMapDropped(map.path)}
+                  className="default-map-thumbnail-btn"
+                  title={map.name}
+                >
+                  <img
+                    src={map.path}
+                    alt={map.name}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      display: 'block'
+                    }}
+                  />
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '0',
+                    left: '0',
+                    right: '0',
+                    background: 'rgba(0,0,0,0.8)',
+                    color: '#fff',
+                    fontSize: '0.6rem',
+                    textAlign: 'center',
+                    padding: '2px 0',
+                    fontWeight: '600',
+                  }}>
+                    {map.label}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
             💡 Pro-Tip: Paste an image or URL directly (Ctrl+V) anywhere on the page!
           </span>

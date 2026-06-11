@@ -666,3 +666,56 @@ body.panning-mode .map-container:active {
   white-space: nowrap;
   font-family: 'Inter', sans-serif;
 }
+
+/* --- DEFAULT MAP PRESETS --- */
+.default-map-thumbnail-btn {
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  overflow: hidden;
+  height: 64px;
+  width: 64px;
+  background: transparent;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+}
+
+.default-map-thumbnail-btn:hover {
+  border-color: var(--accent-hover);
+  transform: scale(1.08);
+  box-shadow: 0 0 15px var(--accent-glow), 0 4px 15px rgba(0, 0, 0, 0.6);
+}
+
+.default-map-thumbnail-btn:active {
+  transform: scale(0.95);
+}
+
+.sidebar-default-map-btn {
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  overflow: hidden;
+  height: 48px;
+  width: 100%;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-default-map-btn:hover {
+  border-color: var(--accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.sidebar-default-map-btn.active {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 10px var(--accent-glow);
+  transform: none;
+}
+

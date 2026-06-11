@@ -119,7 +119,12 @@ function App() {
 
         if (file) {
           if (typeof file === 'string') {
-            setMapImage(file);
+            let processed = file;
+            if (file.startsWith('/maps/')) {
+              const base = import.meta.env.BASE_URL || '/';
+              processed = base + file.substring(1);
+            }
+            setMapImage(processed);
           } else {
             const objectUrl = URL.createObjectURL(file);
             setMapImage(objectUrl);
@@ -430,6 +435,7 @@ function App() {
         isOpen={isSidebarOpen}
         onLoadMapImage={handleMapDropped}
         onLoadMapUrl={handleMapUrlSubmit}
+        mapImage={mapImage}
       />
 
       <button

@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { DEFAULT_MAPS } from '../utils/constants';
 
 const Sidebar = ({
   gridUnit,
@@ -18,6 +19,7 @@ const Sidebar = ({
   isOpen = true,
   onLoadMapImage,
   onLoadMapUrl,
+  mapImage,
 }) => {
   // Spawn creature state
   const [tokenName, setTokenName] = useState('');
@@ -325,6 +327,58 @@ const Sidebar = ({
                   Load
                 </button>
               </form>
+            </div>
+          </div>
+
+          {/* Default Map Presets */}
+          <div className="input-group" style={{ marginTop: '12px', gap: '4px' }}>
+            <label style={{ fontSize: '0.7rem', opacity: 0.85 }}>Or Select Default Map</label>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(5, 1fr)',
+              gap: '6px',
+              marginTop: '2px'
+            }}>
+              {DEFAULT_MAPS.map((map) => {
+                const isActive = mapImage === map.path;
+                return (
+                  <button
+                    key={map.id}
+                    type="button"
+                    onClick={() => onLoadMapImage(map.path)}
+                    className={`sidebar-default-map-btn ${isActive ? 'active' : ''}`}
+                    title={map.name}
+                  >
+                    <img
+                      src={map.path}
+                      alt={map.name}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        display: 'block'
+                      }}
+                    />
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '0',
+                      left: '0',
+                      right: '0',
+                      background: 'rgba(0,0,0,0.75)',
+                      color: '#fff',
+                      fontSize: '0.55rem',
+                      textAlign: 'center',
+                      padding: '2px 0',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      fontWeight: isActive ? '700' : '400'
+                    }}>
+                      {map.label}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
