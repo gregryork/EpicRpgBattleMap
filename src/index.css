@@ -378,21 +378,21 @@ button:active {
 /* Tooltip Mechanics */
 .tooltip {
   visibility: hidden;
-  width: 180px;
+  width: 220px;
   background-color: rgba(10, 10, 12, 0.95);
   color: #ffffff;
   text-align: center;
   border-radius: 8px;
-  padding: 10px;
+  padding: 12px;
   position: absolute;
   z-index: 1000;
   bottom: 115%;
   left: 50%;
-  margin-left: -90px;
+  margin-left: -110px;
   opacity: 0;
   transition: opacity 0.2s, transform 0.2s;
   pointer-events: none;
-  font-size: 0.8rem;
+  font-size: 0.95rem;
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8);
   transform-origin: bottom center;
@@ -406,7 +406,6 @@ button:active {
 .token:hover .tooltip, .spell-template:hover .tooltip {
   visibility: visible;
   opacity: 1;
-  transform: translateY(-2px);
 }
 
 body.panning-mode .map-container {

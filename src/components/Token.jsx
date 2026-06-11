@@ -14,6 +14,7 @@ const Token = ({
   onDelete,
 }) => {
   const [pos, setPos] = useState({ x, y });
+  const [hovered, setHovered] = useState(false);
   const dragPosRef = useRef({ x, y });
 
   // Synchronize local position if parent state changes (e.g. on load)
@@ -79,9 +80,16 @@ const Token = ({
       }}
       onPointerDown={handlePointerDown}
       onDoubleClick={handleDoubleClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       {name.toUpperCase()}
-      <span className="tooltip">
+      <span
+        className="tooltip"
+        style={{
+          transform: `scale(${1 / scale}) ${hovered ? 'translateY(-6px)' : 'translateY(0)'}`,
+        }}
+      >
         <strong>{name}</strong>
         <br />
         ({getSizeText(size)})

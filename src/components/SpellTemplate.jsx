@@ -16,6 +16,7 @@ const SpellTemplate = ({
   onDelete,
 }) => {
   const [pos, setPos] = useState({ x, y });
+  const [hovered, setHovered] = useState(false);
   const dragPosRef = useRef({ x, y });
 
   // Sync with changes from parent state (e.g. storage reload)
@@ -72,8 +73,15 @@ const SpellTemplate = ({
       }}
       onPointerDown={handlePointerDown}
       onDoubleClick={handleDoubleClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
-      <span className="tooltip">
+      <span
+        className="tooltip"
+        style={{
+          transform: `scale(${1 / scale}) ${hovered ? 'translateY(-6px)' : 'translateY(0)'}`,
+        }}
+      >
         <strong>{label}</strong>
         <br />
         {sizeFeet}ft {shape}
