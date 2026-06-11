@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar';
 import MapViewport from './components/MapViewport';
 import Token from './components/Token';
 import SpellTemplate from './components/SpellTemplate';
+import { saveMapToDB, getMapFromDB } from './utils/db';
 
 // Helper to load initial state from localStorage
 const getInitialBoardState = () => {
@@ -46,6 +47,22 @@ function App() {
 
   // UI state
   const [isSpacePressed, setIsSpacePressed] = useState(false);
+
+  // Load map image from IndexedDB on mount
+  useEffect(() => {
+    const loadSavedMap = async () => {
+      try {
+        const file = await getMapFromDB();
+        if (file) {
+          const objectUrl = URL.createObjectURL(file);
+          setMapImage(objectUrl);
+        }
+      } catch (err) {
+        console.error('Failed to restore map from database:', err);
+      }
+    };
+    loadSavedMap();
+  }, []);
 
   // Sync state to localStorage whenever changes occur
   useEffect(() => {
@@ -101,12 +118,17 @@ function App() {
   }, []);
 
   // Map dropped file loading
-  const handleMapDropped = (file) => {
+  const handleMapDropped = async (file) => {
     if (mapImage && mapImage.startsWith('blob:')) {
       URL.revokeObjectURL(mapImage);
     }
     const objectUrl = URL.createObjectURL(file);
     setMapImage(objectUrl);
+    try {
+      await saveMapToDB(file);
+    } catch (err) {
+      console.error('Failed to save map image to database:', err);
+    }
   };
 
   // Zoom Button Handlers
