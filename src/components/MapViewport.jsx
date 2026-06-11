@@ -5,6 +5,7 @@ const MapViewport = ({
   scale,
   panX,
   panY,
+  gridUnit,
   isSpacePressed,
   onMapDropped,
   onPanChange,
@@ -118,6 +119,7 @@ const MapViewport = ({
           style={{
             transform: `translate(${panX}px, ${panY}px) scale(${scale})`,
             display: 'block',
+            '--grid-unit': `${gridUnit}px`,
           }}
         >
           <img

@@ -208,6 +208,7 @@ function App() {
         scale={scale}
         panX={panX}
         panY={panY}
+        gridUnit={gridUnit}
         isSpacePressed={isSpacePressed}
         onMapDropped={handleMapDropped}
         onPanChange={(x, y) => {
