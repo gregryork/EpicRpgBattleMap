@@ -14,7 +14,7 @@ const Token = ({
   onDelete,
 }) => {
   const [pos, setPos] = useState({ x, y });
-  const [hovered, setHovered] = useState(false);
+  const [flipTooltip, setFlipTooltip] = useState(false);
   const dragPosRef = useRef({ x, y });
 
   // Synchronize local position if parent state changes (e.g. on load)
@@ -60,6 +60,16 @@ const Token = ({
     }
   };
 
+  const handleMouseEnter = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    // If the top of the token is less than 150px from the top of the screen, flip it below
+    if (rect.top < 150) {
+      setFlipTooltip(true);
+    } else {
+      setFlipTooltip(false);
+    }
+  };
+
   const getSizeText = (val) => {
     switch (String(val)) {
       case '1': return 'Medium';
@@ -73,6 +83,9 @@ const Token = ({
     }
   };
 
+  // Safe fallback to prevent NaN scaling values
+  const safeScale = typeof scale === 'number' && scale > 0 ? scale : 1;
+
   return (
     <div
       className={`token ${faction}`}
@@ -83,14 +96,13 @@ const Token = ({
       }}
       onPointerDown={handlePointerDown}
       onDoubleClick={handleDoubleClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={handleMouseEnter}
     >
       {name.toUpperCase()}
       <span
-        className="tooltip"
+        className={`tooltip ${flipTooltip ? 'tooltip-bottom' : ''}`}
         style={{
-          transform: `scale(${1 / scale}) ${hovered ? 'translateY(-6px)' : 'translateY(0)'}`,
+          '--tooltip-scale': String(1 / safeScale),
         }}
       >
         <strong>{name}</strong>

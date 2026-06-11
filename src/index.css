@@ -300,6 +300,10 @@ button:active {
   cursor: grabbing;
 }
 
+.token:hover {
+  z-index: 150;
+}
+
 .token.friendly {
   background-color: var(--friendly-bg);
   border-color: var(--friendly-border);
@@ -333,43 +337,59 @@ button:active {
   cursor: grab;
   z-index: 10;
   box-sizing: border-box;
-  border: 2px dashed rgba(255, 255, 255, 0.8);
-  box-shadow: 0 0 20px rgba(255,255,255,0.15);
-  opacity: 0.65;
-  transition: opacity 0.2s, border-color 0.2s;
+  background-color: rgba(0, 0, 0, 0); /* Capture hover in hollow areas */
   
   width: calc(var(--grid-unit) * var(--w-units));
   height: calc(var(--grid-unit) * var(--h-units));
+}
+
+.spell-template:hover {
+  z-index: 140;
 }
 
 .spell-template:active {
   cursor: grabbing;
 }
 
-.spell-template:hover {
+/* Pseudo-element for visual rendering of the spell shape and colors */
+.spell-template::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  box-sizing: border-box;
+  border: 2px dashed rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 20px rgba(255,255,255,0.15);
+  opacity: 0.65;
+  transition: opacity 0.2s, border-color 0.2s;
+}
+
+.spell-template:hover::before {
   opacity: 0.85;
   border-color: #ffffff;
 }
 
-.spell-template.circle { border-radius: 50%; }
-.spell-template.cone { clip-path: polygon(50% 0%, 0% 100%, 100% 100%); }
+.spell-template.circle::before { border-radius: 50%; }
+.spell-template.cone::before { clip-path: polygon(50% 0%, 0% 100%, 100% 100%); }
 
-.spell-template.fire {
+.spell-template.fire::before {
   background: radial-gradient(circle, rgba(239, 68, 68, 0.75) 0%, rgba(245, 158, 11, 0.4) 100%);
   border-color: #fbbf24;
   box-shadow: 0 0 25px rgba(245, 158, 11, 0.4);
 }
-.spell-template.cold {
+.spell-template.cold::before {
   background: radial-gradient(circle, rgba(59, 130, 246, 0.7) 0%, rgba(147, 197, 253, 0.3) 100%);
   border-color: #93c5fd;
   box-shadow: 0 0 25px rgba(59, 130, 246, 0.4);
 }
-.spell-template.acid {
+.spell-template.acid::before {
   background: radial-gradient(circle, rgba(16, 185, 129, 0.7) 0%, rgba(167, 243, 208, 0.3) 100%);
   border-color: #a7f3d0;
   box-shadow: 0 0 25px rgba(16, 185, 129, 0.4);
 }
-.spell-template.lightning {
+.spell-template.lightning::before {
   background: radial-gradient(circle, rgba(139, 92, 246, 0.7) 0%, rgba(216, 180, 254, 0.3) 100%);
   border-color: #e9d5ff;
   box-shadow: 0 0 25px rgba(139, 92, 246, 0.4);
@@ -401,11 +421,27 @@ button:active {
   font-weight: normal;
   line-height: 1.4;
   backdrop-filter: blur(4px);
+  
+  /* Apply scale and counter-rotation variables with standard CSS fallbacks */
+  transform: scale(var(--tooltip-scale, 1)) rotate(var(--tooltip-rotation, 0deg)) translateY(0px);
 }
 
 .token:hover .tooltip, .spell-template:hover .tooltip {
   visibility: visible;
   opacity: 1;
+  transform: scale(var(--tooltip-scale, 1)) rotate(var(--tooltip-rotation, 0deg)) translateY(-6px);
+}
+
+/* Flipped Tooltip (Below the element) */
+.tooltip.tooltip-bottom {
+  bottom: auto;
+  top: 115%;
+  transform-origin: top center;
+  transform: scale(var(--tooltip-scale, 1)) rotate(var(--tooltip-rotation, 0deg)) translateY(0px);
+}
+
+.token:hover .tooltip.tooltip-bottom, .spell-template:hover .tooltip.tooltip-bottom {
+  transform: scale(var(--tooltip-scale, 1)) rotate(var(--tooltip-rotation, 0deg)) translateY(6px);
 }
 
 body.panning-mode .map-container {

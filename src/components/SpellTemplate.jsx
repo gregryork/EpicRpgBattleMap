@@ -18,7 +18,7 @@ const SpellTemplate = ({
   onDelete,
 }) => {
   const [pos, setPos] = useState({ x, y });
-  const [hovered, setHovered] = useState(false);
+  const [flipTooltip, setFlipTooltip] = useState(false);
   const dragPosRef = useRef({ x, y });
   const elementRef = useRef(null);
 
@@ -51,21 +51,31 @@ const SpellTemplate = ({
 
   // Handle 'R' key rotation on hover
   useEffect(() => {
-    if (!hovered) return;
+    const el = elementRef.current;
+    if (!el) return;
+
+    let isMouseOver = false;
+    const handleMouseEnter = () => { isMouseOver = true; };
+    const handleMouseLeave = () => { isMouseOver = false; };
 
     const handleKeyDown = (e) => {
-      if (e.key === 'r' || e.key === 'R') {
+      if (isMouseOver && (e.key === 'r' || e.key === 'R')) {
         e.preventDefault();
         const nextRotation = (rotation + 15) % 360;
         onRotate(id, nextRotation);
       }
     };
 
+    el.addEventListener('mouseenter', handleMouseEnter);
+    el.addEventListener('mouseleave', handleMouseLeave);
     window.addEventListener('keydown', handleKeyDown);
+
     return () => {
+      el.removeEventListener('mouseenter', handleMouseEnter);
+      el.removeEventListener('mouseleave', handleMouseLeave);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [hovered, id, rotation, onRotate]);
+  }, [id, rotation, onRotate]);
 
   const handlePointerDown = (e) => {
     if (isSpacePressed) return;
@@ -104,6 +114,20 @@ const SpellTemplate = ({
     }
   };
 
+  const handleMouseEnter = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    // If the top of the template is less than 150px from the top of the screen, flip it below
+    if (rect.top < 150) {
+      setFlipTooltip(true);
+    } else {
+      setFlipTooltip(false);
+    }
+  };
+
+  // Safe fallbacks to prevent NaN scaling values
+  const safeScale = typeof scale === 'number' && scale > 0 ? scale : 1;
+  const safeRotation = typeof rotation === 'number' ? rotation : 0;
+
   return (
     <div
       ref={elementRef}
@@ -111,19 +135,19 @@ const SpellTemplate = ({
       style={{
         left: `${pos.x}px`,
         top: `${pos.y}px`,
-        transform: `rotate(${rotation}deg)`,
+        transform: `rotate(${safeRotation}deg)`,
         '--w-units': wUnits,
         '--h-units': hUnits,
       }}
       onPointerDown={handlePointerDown}
       onDoubleClick={handleDoubleClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={handleMouseEnter}
     >
       <span
-        className="tooltip"
+        className={`tooltip ${flipTooltip ? 'tooltip-bottom' : ''}`}
         style={{
-          transform: `scale(${1 / scale}) rotate(${-rotation}deg) ${hovered ? 'translateY(-6px)' : 'translateY(0)'}`,
+          '--tooltip-scale': String(1 / safeScale),
+          '--tooltip-rotation': `${-safeRotation}deg`,
         }}
       >
         <strong>{label}</strong>
