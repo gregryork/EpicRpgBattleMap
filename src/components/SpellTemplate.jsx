@@ -109,9 +109,7 @@ const SpellTemplate = ({
 
   const handleDoubleClick = (e) => {
     e.stopPropagation();
-    if (window.confirm(`Remove effect template "${label}"?`)) {
-      onDelete(id);
-    }
+    onDelete(id);
   };
 
   const handleMouseEnter = (e) => {

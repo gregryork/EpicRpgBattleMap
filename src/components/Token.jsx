@@ -55,9 +55,7 @@ const Token = ({
 
   const handleDoubleClick = (e) => {
     e.stopPropagation();
-    if (window.confirm(`Remove "${name}"?`)) {
-      onDelete(id);
-    }
+    onDelete(id);
   };
 
   const handleMouseEnter = (e) => {
