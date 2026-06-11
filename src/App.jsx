@@ -3,81 +3,140 @@ import Sidebar from './components/Sidebar';
 import MapViewport from './components/MapViewport';
 import Token from './components/Token';
 import SpellTemplate from './components/SpellTemplate';
-import { saveMapToDB, getMapFromDB } from './utils/db';
+import { saveMapToDB, getMapFromDB, clearMapFromDB } from './utils/db';
 
-// Helper to load initial state from localStorage
+// Helper to load initial state from localStorage with legacy migration
 const getInitialBoardState = () => {
-  const raw = localStorage.getItem('dnd_battlemap_state');
+  const raw = localStorage.getItem('dnd_battlemaps_state');
   if (raw) {
     try {
       const parsed = JSON.parse(raw);
-      return {
-        scale: parsed.scale ?? 1,
-        panX: parsed.panX ?? 10,
-        panY: parsed.panY ?? 10,
-        gridUnit: parsed.gridUnit ? parseInt(parsed.gridUnit, 10) : 60,
-        tokens: parsed.tokens ?? [],
-        spells: parsed.spells ?? [],
-      };
+      if (parsed.maps && parsed.maps.length > 0) {
+        return {
+          maps: parsed.maps,
+          activeMapId: parsed.activeMapId || parsed.maps[0].id,
+        };
+      }
     } catch (e) {
       console.error('Failed to parse saved board state:', e);
     }
   }
+
+  // Legacy Migration Check
+  const legacyRaw = localStorage.getItem('dnd_battlemap_state');
+  if (legacyRaw) {
+    try {
+      const legacy = JSON.parse(legacyRaw);
+      const defaultMap = {
+        id: 'map-default',
+        name: 'Default Battlemap',
+        gridUnit: legacy.gridUnit ? parseInt(legacy.gridUnit, 10) : 60,
+        scale: legacy.scale ?? 1,
+        panX: legacy.panX ?? 10,
+        panY: legacy.panY ?? 10,
+        tokens: legacy.tokens ?? [],
+        spells: legacy.spells ?? [],
+      };
+      return {
+        maps: [defaultMap],
+        activeMapId: 'map-default',
+      };
+    } catch (e) {
+      console.error('Failed to migrate legacy single map state:', e);
+    }
+  }
+
+  // Default configuration
   return {
-    scale: 1,
-    panX: 10,
-    panY: 10,
-    gridUnit: 60,
-    tokens: [],
-    spells: [],
+    maps: [
+      {
+        id: 'map-default',
+        name: 'Default Battlemap',
+        gridUnit: 60,
+        scale: 1,
+        panX: 10,
+        panY: 10,
+        tokens: [],
+        spells: [],
+      },
+    ],
+    activeMapId: 'map-default',
   };
 };
 
 function App() {
   const initialState = getInitialBoardState();
 
-  // Core board states
-  const [scale, setScale] = useState(initialState.scale);
-  const [panX, setPanX] = useState(initialState.panX);
-  const [panY, setPanY] = useState(initialState.panY);
-  const [gridUnit, setGridUnit] = useState(initialState.gridUnit);
-  const [tokens, setTokens] = useState(initialState.tokens);
-  const [spells, setSpells] = useState(initialState.spells);
+  // Core multi-map states
+  const [maps, setMaps] = useState(initialState.maps);
+  const [activeMapId, setActiveMapId] = useState(initialState.activeMapId);
   const [mapImage, setMapImage] = useState('');
 
   // UI state
   const [isSpacePressed, setIsSpacePressed] = useState(false);
 
-  // Load map image from IndexedDB on mount
+  // Active Map helper getter
+  const activeMap =
+    maps.find((m) => m.id === activeMapId) ||
+    maps[0] ||
+    {
+      id: 'map-default',
+      name: 'Default Battlemap',
+      gridUnit: 60,
+      scale: 1,
+      panX: 10,
+      panY: 10,
+      tokens: [],
+      spells: [],
+    };
+
+  // Helper to update properties of the active map in state
+  const updateActiveMap = (updater) => {
+    setMaps((prev) =>
+      prev.map((m) => (m.id === activeMapId ? { ...m, ...updater(m) } : m))
+    );
+  };
+
+  // Load map image from IndexedDB whenever activeMapId changes
   useEffect(() => {
-    const loadSavedMap = async () => {
+    let isCurrent = true;
+    const loadActiveMapImage = async () => {
       try {
-        const file = await getMapFromDB();
+        const file = await getMapFromDB(activeMapId);
+        if (!isCurrent) return;
+
+        if (mapImage && mapImage.startsWith('blob:')) {
+          URL.revokeObjectURL(mapImage);
+        }
+
         if (file) {
           const objectUrl = URL.createObjectURL(file);
           setMapImage(objectUrl);
+        } else {
+          setMapImage('');
         }
       } catch (err) {
-        console.error('Failed to restore map from database:', err);
+        console.error('Failed to restore active map from IndexedDB:', err);
+        if (isCurrent) setMapImage('');
       }
     };
-    loadSavedMap();
-  }, []);
 
-  // Sync state to localStorage whenever changes occur
+    loadActiveMapImage();
+    return () => {
+      isCurrent = false;
+    };
+  }, [activeMapId]);
+
+  // Sync state to localStorage whenever maps or activeMapId changes
   useEffect(() => {
     const state = {
-      scale,
-      panX,
-      panY,
-      gridUnit,
-      tokens,
-      spells,
+      maps,
+      activeMapId,
     };
-    localStorage.setItem('dnd_battlemap_state', JSON.stringify(state));
-  }, [scale, panX, panY, gridUnit, tokens, spells]);
+    localStorage.setItem('dnd_battlemaps_state', JSON.stringify(state));
+  }, [maps, activeMapId]);
 
-  // Clean up Object URL on unmount or map change
+  // Clean up Object URL on unmount
   useEffect(() => {
     return () => {
       if (mapImage && mapImage.startsWith('blob:')) {
@@ -117,7 +176,7 @@ function App() {
     };
   }, []);
 
-  // Map dropped file loading
+  // Map file upload / dropped handler
   const handleMapDropped = async (file) => {
     if (mapImage && mapImage.startsWith('blob:')) {
       URL.revokeObjectURL(mapImage);
@@ -125,7 +184,7 @@ function App() {
     const objectUrl = URL.createObjectURL(file);
     setMapImage(objectUrl);
     try {
-      await saveMapToDB(file);
+      await saveMapToDB(activeMapId, file);
     } catch (err) {
       console.error('Failed to save map image to database:', err);
     }
@@ -134,22 +193,20 @@ function App() {
   // Zoom Button Handlers
   const handleZoomIn = () => {
     if (!mapImage) return;
-    setScale((prev) => Math.min(6, prev * 1.2));
+    updateActiveMap((m) => ({ scale: Math.min(6, m.scale * 1.2) }));
   };
 
   const handleZoomOut = () => {
     if (!mapImage) return;
-    setScale((prev) => Math.max(0.08, prev * 0.8));
+    updateActiveMap((m) => ({ scale: Math.max(0.08, m.scale * 0.8) }));
   };
 
   const handleZoomReset = () => {
     if (!mapImage) return;
-    setScale(1);
-    setPanX(10);
-    setPanY(10);
+    updateActiveMap(() => ({ scale: 1, panX: 10, panY: 10 }));
   };
 
-  // Spawning Helpers
+  // Creature Spawning Helper
   const handleAddToken = ({ name, size, desc, faction }) => {
     const newToken = {
       id: `token-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -160,9 +217,10 @@ function App() {
       x: 50,
       y: 50,
     };
-    setTokens((prev) => [...prev, newToken]);
+    updateActiveMap((m) => ({ tokens: [...m.tokens, newToken] }));
   };
 
+  // Spell Template Spawning Helper
   const handleAddSpell = ({ shape, sizeFeet, element, label }) => {
     const gridUnits = sizeFeet / 5;
     let wUnits = gridUnits;
@@ -187,67 +245,107 @@ function App() {
       x: 100,
       y: 100,
     };
-    setSpells((prev) => [...prev, newSpell]);
+    updateActiveMap((m) => ({ spells: [...m.spells, newSpell] }));
   };
 
-  // Drag End coordinates update
+  // Drag End handlers
   const handleTokenDragEnd = (id, newX, newY) => {
-    setTokens((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, x: newX, y: newY } : t))
-    );
+    updateActiveMap((m) => ({
+      tokens: m.tokens.map((t) => (t.id === id ? { ...t, x: newX, y: newY } : t)),
+    }));
   };
 
   const handleSpellDragEnd = (id, newX, newY) => {
-    setSpells((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, x: newX, y: newY } : s))
-    );
+    updateActiveMap((m) => ({
+      spells: m.spells.map((s) => (s.id === id ? { ...s, x: newX, y: newY } : s)),
+    }));
   };
 
   // Double Click deletion handlers
   const handleTokenDelete = (id) => {
-    setTokens((prev) => prev.filter((t) => t.id !== id));
+    updateActiveMap((m) => ({ tokens: m.tokens.filter((t) => t.id !== id) }));
   };
 
   const handleSpellDelete = (id) => {
-    setSpells((prev) => prev.filter((s) => s.id !== id));
+    updateActiveMap((m) => ({ spells: m.spells.filter((s) => s.id !== id) }));
+  };
+
+  // Battlemap Manager Operations
+  const handleCreateMap = (name) => {
+    const newMap = {
+      id: `map-${Date.now()}`,
+      name,
+      gridUnit: 60,
+      scale: 1,
+      panX: 10,
+      panY: 10,
+      tokens: [],
+      spells: [],
+    };
+    setMaps((prev) => [...prev, newMap]);
+    setActiveMapId(newMap.id);
+  };
+
+  const handleRenameMap = (id, newName) => {
+    setMaps((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, name: newName } : m))
+    );
+  };
+
+  const handleDeleteMap = async (id) => {
+    if (maps.length <= 1) return;
+
+    if (activeMapId === id) {
+      const remaining = maps.filter((m) => m.id !== id);
+      setActiveMapId(remaining[0].id);
+    }
+
+    setMaps((prev) => prev.filter((m) => m.id !== id));
+
+    try {
+      await clearMapFromDB(id);
+    } catch (err) {
+      console.error('Failed to remove map image from database:', err);
+    }
   };
 
   return (
     <>
       <Sidebar
-        gridUnit={gridUnit}
-        setGridUnit={setGridUnit}
+        gridUnit={activeMap.gridUnit}
+        setGridUnit={(val) => updateActiveMap(() => ({ gridUnit: val }))}
         isMapActive={!!mapImage}
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onZoomReset={handleZoomReset}
         onAddToken={handleAddToken}
         onAddSpell={handleAddSpell}
+        maps={maps}
+        activeMapId={activeMapId}
+        onSwitchMap={setActiveMapId}
+        onCreateMap={handleCreateMap}
+        onRenameMap={handleRenameMap}
+        onDeleteMap={handleDeleteMap}
       />
 
       <MapViewport
         mapImage={mapImage}
-        scale={scale}
-        panX={panX}
-        panY={panY}
-        gridUnit={gridUnit}
+        scale={activeMap.scale}
+        panX={activeMap.panX}
+        panY={activeMap.panY}
+        gridUnit={activeMap.gridUnit}
         isSpacePressed={isSpacePressed}
         onMapDropped={handleMapDropped}
-        onPanChange={(x, y) => {
-          setPanX(x);
-          setPanY(y);
-        }}
-        onZoomChange={(s, x, y) => {
-          setScale(s);
-          setPanX(x);
-          setPanY(y);
-        }}
+        onPanChange={(x, y) => updateActiveMap(() => ({ panX: x, panY: y }))}
+        onZoomChange={(s, x, y) =>
+          updateActiveMap(() => ({ scale: s, panX: x, panY: y }))
+        }
         onSaveState={() => {
           // Triggers side effect update save
-          setScale((s) => s);
+          setMaps((m) => [...m]);
         }}
       >
-        {tokens.map((token) => (
+        {activeMap.tokens.map((token) => (
           <Token
             key={token.id}
             id={token.id}
@@ -257,14 +355,14 @@ function App() {
             size={token.size}
             x={token.x}
             y={token.y}
-            scale={scale}
+            scale={activeMap.scale}
             isSpacePressed={isSpacePressed}
             onDragEnd={handleTokenDragEnd}
             onDelete={handleTokenDelete}
           />
         ))}
 
-        {spells.map((spell) => (
+        {activeMap.spells.map((spell) => (
           <SpellTemplate
             key={spell.id}
             id={spell.id}
@@ -276,7 +374,7 @@ function App() {
             hUnits={spell.hUnits}
             x={spell.x}
             y={spell.y}
-            scale={scale}
+            scale={activeMap.scale}
             isSpacePressed={isSpacePressed}
             onDragEnd={handleSpellDragEnd}
             onDelete={handleSpellDelete}

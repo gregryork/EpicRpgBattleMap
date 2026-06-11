@@ -9,6 +9,12 @@ const Sidebar = ({
   onZoomReset,
   onAddToken,
   onAddSpell,
+  maps,
+  activeMapId,
+  onSwitchMap,
+  onCreateMap,
+  onRenameMap,
+  onDeleteMap,
 }) => {
   // Spawn creature state
   const [tokenName, setTokenName] = useState('');
@@ -58,6 +64,121 @@ const Sidebar = ({
   return (
     <aside className="sidebar">
       <h2>DM Workspace</h2>
+
+      <div className="input-group">
+        <label>Battlemaps Manager</label>
+        <div className="map-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+          {maps.map((map) => {
+            const isActive = map.id === activeMapId;
+            return (
+              <div
+                key={map.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: isActive ? 'rgba(168, 50, 50, 0.15)' : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${isActive ? 'var(--accent-color)' : 'rgba(255,255,255,0.08)'}`,
+                  borderRadius: '6px',
+                  padding: '4px 8px',
+                  boxShadow: isActive ? '0 0 10px rgba(168, 50, 50, 0.2)' : 'none',
+                }}
+              >
+                <div
+                  onClick={() => onSwitchMap(map.id)}
+                  style={{
+                    flexGrow: 1,
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    fontWeight: isActive ? '600' : '400',
+                    color: isActive ? '#fff' : 'var(--text-secondary)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    padding: '4px 0',
+                  }}
+                  title={map.name}
+                >
+                  {map.name}
+                </div>
+                <button
+                  onClick={() => {
+                    const newName = window.prompt('Rename Battlemap:', map.name);
+                    if (newName && newName.trim()) {
+                      onRenameMap(map.id, newName.trim());
+                    }
+                  }}
+                  style={{
+                    width: 'auto',
+                    padding: '2px 6px',
+                    fontSize: '0.75rem',
+                    background: 'transparent',
+                    border: 'none',
+                    boxShadow: 'none',
+                    color: 'var(--text-secondary)',
+                    cursor: 'pointer',
+                  }}
+                  title="Rename"
+                >
+                  ✏️
+                </button>
+                <button
+                  onClick={() => {
+                    if (maps.length <= 1) {
+                      alert('You must have at least one battlemap!');
+                      return;
+                    }
+                    if (window.confirm(`Delete battlemap "${map.name}"? This will also delete all of its tokens and spells.`)) {
+                      onDeleteMap(map.id);
+                    }
+                  }}
+                  disabled={maps.length <= 1}
+                  style={{
+                    width: 'auto',
+                    padding: '2px 6px',
+                    fontSize: '0.75rem',
+                    background: 'transparent',
+                    border: 'none',
+                    boxShadow: 'none',
+                    color: maps.length <= 1 ? 'var(--text-muted)' : '#ef4444',
+                    cursor: maps.length <= 1 ? 'not-allowed' : 'pointer',
+                    opacity: maps.length <= 1 ? 0.4 : 1,
+                  }}
+                  title="Delete"
+                >
+                  🗑️
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Create Map Form */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const name = e.target.elements.newMapName.value.trim();
+            if (name) {
+              onCreateMap(name);
+              e.target.reset();
+            }
+          }}
+          style={{ display: 'flex', gap: '8px', marginTop: '4px' }}
+        >
+          <input
+            type="text"
+            name="newMapName"
+            placeholder="New Map Name"
+            required
+            style={{ flexGrow: 1, padding: '6px 8px', fontSize: '0.8rem' }}
+          />
+          <button type="submit" style={{ width: '40px', padding: '6px 0', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            ➕
+          </button>
+        </form>
+      </div>
+
+      <hr className="divider" />
 
       <div className="input-group">
         <label htmlFor="grid-slider">Grid/Token Scale: {gridUnit}px</label>
