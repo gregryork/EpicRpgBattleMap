@@ -400,6 +400,7 @@ const Sidebar = ({
       <div className="help-text">
         • <strong>Align Grid:</strong> Adjust the top slider until tokens cleanly fit the map squares.<br />
         • <strong>Pan view:</strong> Hold <code>Spacebar</code> and drag background.<br />
+        • <strong>Right-click token:</strong> Toggle status markers (poisoned, dead, etc.).<br />
         • <strong>Rotate spells:</strong> Hover + hold <code>Shift</code> + scroll mouse wheel, or press <code>R</code>.<br />
         • <strong>Delete anything:</strong> Double-click item.
       </div>

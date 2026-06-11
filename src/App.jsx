@@ -216,8 +216,23 @@ function App() {
       size,
       x: 50,
       y: 50,
+      markers: [],
     };
     updateActiveMap((m) => ({ tokens: [...m.tokens, newToken] }));
+  };
+
+  const handleToggleTokenMarker = (id, markerId) => {
+    updateActiveMap((m) => ({
+      tokens: m.tokens.map((t) => {
+        if (t.id !== id) return t;
+        const currentMarkers = t.markers ?? [];
+        const isSelected = currentMarkers.includes(markerId);
+        const nextMarkers = isSelected
+          ? currentMarkers.filter((mId) => mId !== markerId)
+          : [...currentMarkers, markerId];
+        return { ...t, markers: nextMarkers };
+      }),
+    }));
   };
 
   // Spell Template Spawning Helper
@@ -364,7 +379,9 @@ function App() {
             y={token.y}
             scale={activeMap.scale}
             isSpacePressed={isSpacePressed}
+            markers={token.markers ?? []}
             onDragEnd={handleTokenDragEnd}
+            onToggleMarker={handleToggleTokenMarker}
             onDelete={handleTokenDelete}
           />
         ))}
