@@ -8,6 +8,7 @@ const MapViewport = ({
   gridUnit,
   isSpacePressed,
   onMapDropped,
+  onLoadUrl,
   onPanChange,
   onZoomChange,
   onSaveState,
@@ -16,6 +17,27 @@ const MapViewport = ({
   const [dragOver, setDragOver] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
   const containerRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const [urlInput, setUrlInput] = useState('');
+
+  const handleBrowseClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onMapDropped(file);
+    }
+  };
+
+  const handleUrlSubmit = (e) => {
+    e.preventDefault();
+    if (urlInput.trim()) {
+      onLoadUrl(urlInput.trim());
+      setUrlInput('');
+    }
+  };
 
   // Handle passive-false wheel listener for zoom preventDefault
   useEffect(() => {
@@ -220,11 +242,63 @@ const MapViewport = ({
       onMouseDown={handleMouseDown}
     >
       {!mapImage && (
-        <div className="map-placeholder">
+        <div className="map-placeholder" onPointerDown={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
           <strong>DRAG & DROP YOUR MAP HERE</strong>
           <br />
           <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
             Drop your floorplan PNG/JPEG file anywhere into this area.
+          </span>
+          <div style={{ margin: '15px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>— OR —</span>
+            <button
+              type="button"
+              onClick={handleBrowseClick}
+              style={{
+                width: 'auto',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                cursor: 'pointer',
+                borderRadius: '6px',
+                padding: '8px 16px',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+              }}
+            >
+              📁 Browse Files...
+            </button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+            />
+            <form onSubmit={handleUrlSubmit} style={{ display: 'flex', gap: '8px', width: '100%', maxWidth: '300px', marginTop: '5px' }} onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+              <input
+                type="text"
+                placeholder="Paste image URL..."
+                value={urlInput}
+                onChange={(e) => setUrlInput(e.target.value)}
+                style={{ flexGrow: 1, padding: '8px 10px', fontSize: '0.85rem' }}
+              />
+              <button
+                type="submit"
+                style={{
+                  width: 'auto',
+                  padding: '8px 14px',
+                  background: 'var(--accent-color)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                }}
+              >
+                Load
+              </button>
+            </form>
+          </div>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+            💡 Pro-Tip: Paste an image or URL directly (Ctrl+V) anywhere on the page!
           </span>
         </div>
       )}

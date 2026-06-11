@@ -12,6 +12,7 @@ An ultra-sleek, responsive, and lightweight **Virtual Tabletop (VTT)** designed 
 ## ✨ Features
 
 - 🗺️ **IndexedDB Layout Persistence:** Load and manage multiple floorplans. Images and asset placements are stored locally in your browser's database so your campaign state is never lost.
+- 📥 **Multi-Channel Map Loading:** Load map floorplans by dragging & dropping, browsing local files, pasting image URLs, or copying and pasting images/URLs directly from your clipboard (`Ctrl+V` / clipboard paste).
 - 📐 **Dynamic Grid Alignment:** Align map squares perfectly with your tokens using a real-time scale slider.
 - 🛡️ **Interactive Creature Tokens:**
   - Distinct faction colors & glowing rings (Players/Allies, Hostiles, Neutrals).

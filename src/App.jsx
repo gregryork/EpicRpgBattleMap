@@ -118,8 +118,12 @@ function App() {
         }
 
         if (file) {
-          const objectUrl = URL.createObjectURL(file);
-          setMapImage(objectUrl);
+          if (typeof file === 'string') {
+            setMapImage(file);
+          } else {
+            const objectUrl = URL.createObjectURL(file);
+            setMapImage(objectUrl);
+          }
         } else {
           setMapImage('');
         }
@@ -184,17 +188,84 @@ function App() {
     };
   }, []);
 
+  // Handle global paste event (Ctrl+V or tap-and-paste) for images & URLs
+  useEffect(() => {
+    const handlePaste = async (e) => {
+      // Ignore paste events in text inputs or textareas so typing works normally
+      const activeTag = document.activeElement?.tagName;
+      if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') {
+        return;
+      }
+
+      const items = e.clipboardData?.items;
+      if (items) {
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].type.indexOf('image') !== -1) {
+            e.preventDefault();
+            const file = items[i].getAsFile();
+            if (file) {
+              handleMapDropped(file);
+              return;
+            }
+          }
+        }
+      }
+
+      const text = e.clipboardData?.getData('text');
+      if (text) {
+        const trimmed = text.trim();
+        if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+          e.preventDefault();
+          handleMapUrlSubmit(trimmed);
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => {
+      window.removeEventListener('paste', handlePaste);
+    };
+  }, [activeMapId, mapImage]);
+
   // Map file upload / dropped handler
   const handleMapDropped = async (file) => {
     if (mapImage && mapImage.startsWith('blob:')) {
       URL.revokeObjectURL(mapImage);
     }
-    const objectUrl = URL.createObjectURL(file);
-    setMapImage(objectUrl);
+    
+    if (typeof file === 'string') {
+      setMapImage(file);
+    } else {
+      const objectUrl = URL.createObjectURL(file);
+      setMapImage(objectUrl);
+    }
+
     try {
       await saveMapToDB(activeMapId, file);
     } catch (err) {
       console.error('Failed to save map image to database:', err);
+    }
+  };
+
+  // Map URL load handler with CORS safety
+  const handleMapUrlSubmit = async (url) => {
+    if (!url) return;
+    try {
+      // Try to fetch it to save as Blob (offline storage support)
+      const res = await fetch(url);
+      const blob = await res.blob();
+      
+      // Verify it's an image
+      if (blob.type.startsWith('image/')) {
+        await handleMapDropped(blob);
+      } else {
+        // Fallback to storing string URL directly if fetch succeeded but type is weird
+        await handleMapDropped(url);
+      }
+    } catch (e) {
+      console.warn('CORS or network error fetching image, storing URL string fallback:', e);
+      // Fallback: save URL string directly in DB and load it
+      await handleMapDropped(url);
     }
   };
 
@@ -357,6 +428,8 @@ function App() {
         onRenameMap={handleRenameMap}
         onDeleteMap={handleDeleteMap}
         isOpen={isSidebarOpen}
+        onLoadMapImage={handleMapDropped}
+        onLoadMapUrl={handleMapUrlSubmit}
       />
 
       <button
@@ -377,6 +450,7 @@ function App() {
         gridUnit={activeMap.gridUnit}
         isSpacePressed={isSpacePressed}
         onMapDropped={handleMapDropped}
+        onLoadUrl={handleMapUrlSubmit}
         onPanChange={(x, y) => updateActiveMap(() => ({ panX: x, panY: y }))}
         onZoomChange={(s, x, y) =>
           updateActiveMap(() => ({ scale: s, panX: x, panY: y }))

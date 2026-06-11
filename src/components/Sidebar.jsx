@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 
 const Sidebar = ({
   gridUnit,
@@ -16,6 +16,8 @@ const Sidebar = ({
   onRenameMap,
   onDeleteMap,
   isOpen = true,
+  onLoadMapImage,
+  onLoadMapUrl,
 }) => {
   // Spawn creature state
   const [tokenName, setTokenName] = useState('');
@@ -32,6 +34,25 @@ const Sidebar = ({
   // Editing state for rename
   const [editingMapId, setEditingMapId] = useState(null);
   const [editingName, setEditingName] = useState('');
+
+  // Map upload states
+  const [sidebarUrl, setSidebarUrl] = useState('');
+  const fileInputRef = useRef(null);
+
+  const handleSidebarUrlSubmit = (e) => {
+    e.preventDefault();
+    if (sidebarUrl.trim()) {
+      onLoadMapUrl(sidebarUrl.trim());
+      setSidebarUrl('');
+    }
+  };
+
+  const handleSidebarFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onLoadMapImage(file);
+    }
+  };
 
   const handleSpawnToken = (e) => {
     e.preventDefault();
@@ -248,6 +269,61 @@ const Sidebar = ({
               +
             </button>
           </form>
+
+          {/* Load Map Floorplan section */}
+          <div className="input-group" style={{ marginTop: '12px', gap: '4px' }}>
+            <label style={{ fontSize: '0.7rem', opacity: 0.85 }}>Load Map Layout</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  border: '1px dashed rgba(255, 255, 255, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  padding: '6px 8px',
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  borderRadius: '6px',
+                }}
+              >
+                📁 Choose File...
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleSidebarFileChange}
+              />
+              <form onSubmit={handleSidebarUrlSubmit} style={{ display: 'flex', gap: '6px' }}>
+                <input
+                  type="text"
+                  placeholder="Paste image URL..."
+                  value={sidebarUrl}
+                  onChange={(e) => setSidebarUrl(e.target.value)}
+                  style={{ flexGrow: 1, padding: '6px 8px', fontSize: '0.8rem' }}
+                />
+                <button
+                  type="submit"
+                  style={{
+                    width: 'auto',
+                    padding: '6px 10px',
+                    background: 'var(--accent-color)',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Load
+                </button>
+              </form>
+            </div>
+          </div>
         </div>
 
         <hr className="divider" />
