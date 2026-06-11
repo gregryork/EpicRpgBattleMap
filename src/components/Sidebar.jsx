@@ -28,6 +28,10 @@ const Sidebar = ({
   const [spellElement, setSpellElement] = useState('fire');
   const [spellLabel, setSpellLabel] = useState('');
 
+  // Editing state for rename
+  const [editingMapId, setEditingMapId] = useState(null);
+  const [editingName, setEditingName] = useState('');
+
   const handleSpawnToken = (e) => {
     e.preventDefault();
     if (!isMapActive) {
@@ -70,6 +74,7 @@ const Sidebar = ({
         <div className="map-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
           {maps.map((map) => {
             const isActive = map.id === activeMapId;
+            const isEditing = map.id === editingMapId;
             return (
               <div
                 key={map.id}
@@ -84,70 +89,135 @@ const Sidebar = ({
                   boxShadow: isActive ? '0 0 10px rgba(168, 50, 50, 0.2)' : 'none',
                 }}
               >
-                <div
-                  onClick={() => onSwitchMap(map.id)}
-                  style={{
-                    flexGrow: 1,
-                    cursor: 'pointer',
-                    fontSize: '0.85rem',
-                    fontWeight: isActive ? '600' : '400',
-                    color: isActive ? '#fff' : 'var(--text-secondary)',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    padding: '4px 0',
-                  }}
-                  title={map.name}
-                >
-                  {map.name}
-                </div>
-                <button
-                  onClick={() => {
-                    const newName = window.prompt('Rename Battlemap:', map.name);
-                    if (newName && newName.trim()) {
-                      onRenameMap(map.id, newName.trim());
-                    }
-                  }}
-                  style={{
-                    width: 'auto',
-                    padding: '2px 6px',
-                    fontSize: '0.75rem',
-                    background: 'transparent',
-                    border: 'none',
-                    boxShadow: 'none',
-                    color: 'var(--text-secondary)',
-                    cursor: 'pointer',
-                  }}
-                  title="Rename"
-                >
-                  ✏️
-                </button>
-                <button
-                  onClick={() => {
-                    if (maps.length <= 1) {
-                      alert('You must have at least one battlemap!');
-                      return;
-                    }
-                    if (window.confirm(`Delete battlemap "${map.name}"? This will also delete all of its tokens and spells.`)) {
-                      onDeleteMap(map.id);
-                    }
-                  }}
-                  disabled={maps.length <= 1}
-                  style={{
-                    width: 'auto',
-                    padding: '2px 6px',
-                    fontSize: '0.75rem',
-                    background: 'transparent',
-                    border: 'none',
-                    boxShadow: 'none',
-                    color: maps.length <= 1 ? 'var(--text-muted)' : '#ef4444',
-                    cursor: maps.length <= 1 ? 'not-allowed' : 'pointer',
-                    opacity: maps.length <= 1 ? 0.4 : 1,
-                  }}
-                  title="Delete"
-                >
-                  🗑️
-                </button>
+                {isEditing ? (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (editingName.trim()) {
+                        onRenameMap(map.id, editingName.trim());
+                        setEditingMapId(null);
+                      }
+                    }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '4px', flexGrow: 1 }}
+                  >
+                    <input
+                      type="text"
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                          setEditingMapId(null);
+                        }
+                      }}
+                      autoFocus
+                      style={{
+                        flexGrow: 1,
+                        padding: '2px 4px',
+                        fontSize: '0.85rem',
+                        background: 'rgba(0,0,0,0.4)',
+                        border: '1px solid var(--accent-color)',
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      style={{
+                        width: 'auto',
+                        padding: '2px 4px',
+                        fontSize: '0.75rem',
+                        background: 'transparent',
+                        border: 'none',
+                        boxShadow: 'none',
+                        cursor: 'pointer',
+                        color: '#10b981',
+                      }}
+                      title="Save"
+                    >
+                      ✔️
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingMapId(null)}
+                      style={{
+                        width: 'auto',
+                        padding: '2px 4px',
+                        fontSize: '0.75rem',
+                        background: 'transparent',
+                        border: 'none',
+                        boxShadow: 'none',
+                        cursor: 'pointer',
+                        color: '#ef4444',
+                      }}
+                      title="Cancel"
+                    >
+                      ❌
+                    </button>
+                  </form>
+                ) : (
+                  <>
+                    <div
+                      onClick={() => onSwitchMap(map.id)}
+                      style={{
+                        flexGrow: 1,
+                        cursor: 'pointer',
+                        fontSize: '0.85rem',
+                        fontWeight: isActive ? '600' : '400',
+                        color: isActive ? '#fff' : 'var(--text-secondary)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        padding: '4px 0',
+                      }}
+                      title={map.name}
+                    >
+                      {map.name}
+                    </div>
+                    <button
+                      onClick={() => {
+                        setEditingMapId(map.id);
+                        setEditingName(map.name);
+                      }}
+                      style={{
+                        width: 'auto',
+                        padding: '2px 6px',
+                        fontSize: '0.75rem',
+                        background: 'transparent',
+                        border: 'none',
+                        boxShadow: 'none',
+                        color: 'var(--text-secondary)',
+                        cursor: 'pointer',
+                      }}
+                      title="Rename"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (maps.length <= 1) {
+                          alert('You must have at least one battlemap!');
+                          return;
+                        }
+                        if (window.confirm(`Delete battlemap "${map.name}"? This will also delete all of its tokens and spells.`)) {
+                          onDeleteMap(map.id);
+                        }
+                      }}
+                      disabled={maps.length <= 1}
+                      style={{
+                        width: 'auto',
+                        padding: '2px 6px',
+                        fontSize: '0.75rem',
+                        background: 'transparent',
+                        border: 'none',
+                        boxShadow: 'none',
+                        color: maps.length <= 1 ? 'var(--text-muted)' : '#ef4444',
+                        cursor: maps.length <= 1 ? 'not-allowed' : 'pointer',
+                        opacity: maps.length <= 1 ? 0.4 : 1,
+                      }}
+                      title="Delete"
+                    >
+                      🗑️
+                    </button>
+                  </>
+                )}
               </div>
             );
           })}
@@ -172,8 +242,8 @@ const Sidebar = ({
             required
             style={{ flexGrow: 1, padding: '6px 8px', fontSize: '0.8rem' }}
           />
-          <button type="submit" style={{ width: '40px', padding: '6px 0', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            ➕
+          <button type="submit" style={{ width: '40px', padding: '6px 0', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '1.25rem', fontWeight: 'bold' }}>
+            +
           </button>
         </form>
       </div>
