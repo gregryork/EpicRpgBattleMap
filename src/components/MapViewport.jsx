@@ -47,6 +47,123 @@ const MapViewport = ({
     };
   }, [mapImage, scale, panX, panY, onZoomChange]);
 
+  // Touch Gesture Listeners (Single-finger pan & Two-finger pinch-to-zoom)
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    let isTouchPanning = false;
+    let initialTouches = [];
+    let startDist = 0;
+    let startScale = 1;
+
+    const getDistance = (t1, t2) => {
+      const dx = t1.clientX - t2.clientX;
+      const dy = t1.clientY - t2.clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    const getCenter = (t1, t2) => {
+      return {
+        x: (t1.clientX + t2.clientX) / 2,
+        y: (t1.clientY + t2.clientY) / 2,
+      };
+    };
+
+    const handleTouchStart = (e) => {
+      // Ignore if touching a token/spell/status picker (let their listeners handle it)
+      if (
+        e.target.closest('.token') ||
+        e.target.closest('.spell-template') ||
+        e.target.closest('.status-picker-menu')
+      ) {
+        return;
+      }
+
+      if (e.touches.length === 1) {
+        isTouchPanning = true;
+        initialTouches = [
+          {
+            clientX: e.touches[0].clientX,
+            clientY: e.touches[0].clientY,
+            panX,
+            panY,
+          },
+        ];
+      } else if (e.touches.length === 2) {
+        isTouchPanning = true;
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        startDist = getDistance(t1, t2);
+        startScale = scale;
+
+        const center = getCenter(t1, t2);
+        initialTouches = [
+          { clientX: t1.clientX, clientY: t1.clientY },
+          { clientX: t2.clientX, clientY: t2.clientY },
+          { panX, panY, center },
+        ];
+      }
+    };
+
+    const handleTouchMove = (e) => {
+      if (!isTouchPanning) return;
+      e.preventDefault(); // Prevent iPad viewport bounce/scroll
+
+      if (e.touches.length === 1 && initialTouches.length === 1) {
+        const dx = e.touches[0].clientX - initialTouches[0].clientX;
+        const dy = e.touches[0].clientY - initialTouches[0].clientY;
+        onPanChange(initialTouches[0].panX + dx, initialTouches[0].panY + dy);
+      } else if (e.touches.length === 2 && initialTouches.length === 3) {
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const currentDist = getDistance(t1, t2);
+
+        const factor = currentDist / startDist;
+        let nextScale = startScale * factor;
+        if (nextScale < 0.08) nextScale = 0.08;
+        if (nextScale > 6) nextScale = 6;
+
+        const currentCenter = getCenter(t1, t2);
+        const startCenter = initialTouches[2].center;
+        const dx = currentCenter.x - startCenter.x;
+        const dy = currentCenter.y - startCenter.y;
+
+        const containerRect = container.getBoundingClientRect();
+        const pivotX = startCenter.x - containerRect.left;
+        const pivotY = startCenter.y - containerRect.top;
+
+        const nextPanX =
+          pivotX -
+          (pivotX - initialTouches[2].panX) * (nextScale / startScale) +
+          dx;
+        const nextPanY =
+          pivotY -
+          (pivotY - initialTouches[2].panY) * (nextScale / startScale) +
+          dy;
+
+        onZoomChange(nextScale, nextPanX, nextPanY);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      isTouchPanning = false;
+      onSaveState();
+    };
+
+    container.addEventListener('touchstart', handleTouchStart, { passive: false });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+    container.addEventListener('touchend', handleTouchEnd);
+    container.addEventListener('touchcancel', handleTouchEnd);
+
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchend', handleTouchEnd);
+      container.removeEventListener('touchcancel', handleTouchEnd);
+    };
+  }, [mapImage, scale, panX, panY, onPanChange, onZoomChange, onSaveState]);
+
   const handleDragOver = (e) => {
     e.preventDefault();
     setDragOver(true);

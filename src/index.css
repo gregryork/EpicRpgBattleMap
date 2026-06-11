@@ -291,6 +291,7 @@ button:active {
   font-size: calc(var(--grid-unit) * 0.35);
   font-family: 'Cinzel', serif;
   transition: border-color 0.2s, box-shadow 0.2s;
+  touch-action: none;
   
   width: calc(var(--grid-unit) * var(--size-multiplier, 1));
   height: calc(var(--grid-unit) * var(--size-multiplier, 1));
@@ -338,6 +339,7 @@ button:active {
   z-index: 10;
   box-sizing: border-box;
   background-color: rgba(0, 0, 0, 0); /* Capture hover in hollow areas */
+  touch-action: none;
   
   width: calc(var(--grid-unit) * var(--w-units));
   height: calc(var(--grid-unit) * var(--h-units));

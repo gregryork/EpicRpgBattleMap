@@ -44,7 +44,9 @@ const Token = ({
     if (isSpacePressed) return;
     if (showMenu) setShowMenu(false); // Close menu if we start dragging
     e.stopPropagation();
-    e.preventDefault();
+    if (e.pointerType !== 'touch') {
+      e.preventDefault();
+    }
 
     const startX = e.clientX;
     const startY = e.clientY;

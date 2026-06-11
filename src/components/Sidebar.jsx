@@ -399,10 +399,11 @@ const Sidebar = ({
 
       <div className="help-text">
         • <strong>Align Grid:</strong> Adjust the top slider until tokens cleanly fit the map squares.<br />
-        • <strong>Pan view:</strong> Hold <code>Spacebar</code> and drag background.<br />
-        • <strong>Right-click token:</strong> Toggle status markers (poisoned, dead, etc.).<br />
-        • <strong>Rotate spells:</strong> Hover + hold <code>Shift</code> + scroll mouse wheel, or press <code>R</code>.<br />
-        • <strong>Delete anything:</strong> Double-click item.
+        • <strong>Pan view:</strong> Drag background (Touch) or hold <code>Spacebar</code> + drag (Desktop).<br />
+        • <strong>Zoom map:</strong> Pinch map (Touch) or scroll mouse wheel (Desktop).<br />
+        • <strong>Token Menu:</strong> Touch &amp; hold (Touch) or right-click token (Desktop).<br />
+        • <strong>Rotate spells:</strong> Tap spell (Touch) or hover + <code>Shift</code> + scroll / press <code>R</code> (Desktop).<br />
+        • <strong>Delete anything:</strong> Double-tap (Touch) or double-click item (Desktop).
       </div>
     </aside>
   );

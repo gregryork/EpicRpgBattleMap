@@ -80,12 +80,15 @@ const SpellTemplate = ({
   const handlePointerDown = (e) => {
     if (isSpacePressed) return;
     e.stopPropagation();
-    e.preventDefault();
+    if (e.pointerType !== 'touch') {
+      e.preventDefault();
+    }
 
     const startX = e.clientX;
     const startY = e.clientY;
     const initialX = dragPosRef.current.x;
     const initialY = dragPosRef.current.y;
+    const pointerType = e.pointerType;
 
     const handlePointerMove = (moveEvent) => {
       const dx = (moveEvent.clientX - startX) / scale;
@@ -97,10 +100,18 @@ const SpellTemplate = ({
       setPos({ x: nextX, y: nextY });
     };
 
-    const handlePointerUp = () => {
+    const handlePointerUp = (upEvent) => {
       document.removeEventListener('pointermove', handlePointerMove);
       document.removeEventListener('pointerup', handlePointerUp);
       onDragEnd(id, dragPosRef.current.x, dragPosRef.current.y);
+
+      // Rotate by 45 degrees on static touch tap
+      const dx = Math.abs(upEvent.clientX - startX);
+      const dy = Math.abs(upEvent.clientY - startY);
+      if (pointerType === 'touch' && dx < 5 && dy < 5) {
+        const nextRotation = (rotation + 45) % 360;
+        onRotate(id, nextRotation);
+      }
     };
 
     document.addEventListener('pointermove', handlePointerMove);
