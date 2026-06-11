@@ -10,20 +10,62 @@ const SpellTemplate = ({
   hUnits,
   x,
   y,
+  rotation,
   scale,
   isSpacePressed,
   onDragEnd,
+  onRotate,
   onDelete,
 }) => {
   const [pos, setPos] = useState({ x, y });
   const [hovered, setHovered] = useState(false);
   const dragPosRef = useRef({ x, y });
+  const elementRef = useRef(null);
 
   // Sync with changes from parent state (e.g. storage reload)
   useEffect(() => {
     setPos({ x, y });
     dragPosRef.current = { x, y };
   }, [x, y]);
+
+  // Handle Shift + Scroll Wheel rotation
+  useEffect(() => {
+    const el = elementRef.current;
+    if (!el) return;
+
+    const handleWheelEvent = (e) => {
+      if (e.shiftKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        const delta = e.deltaY > 0 ? 15 : -15;
+        const nextRotation = (rotation + delta + 360) % 360;
+        onRotate(id, nextRotation);
+      }
+    };
+
+    el.addEventListener('wheel', handleWheelEvent, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', handleWheelEvent);
+    };
+  }, [id, rotation, onRotate]);
+
+  // Handle 'R' key rotation on hover
+  useEffect(() => {
+    if (!hovered) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        const nextRotation = (rotation + 15) % 360;
+        onRotate(id, nextRotation);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [hovered, id, rotation, onRotate]);
 
   const handlePointerDown = (e) => {
     if (isSpacePressed) return;
@@ -64,10 +106,12 @@ const SpellTemplate = ({
 
   return (
     <div
+      ref={elementRef}
       className={`spell-template ${shape} ${element}`}
       style={{
         left: `${pos.x}px`,
         top: `${pos.y}px`,
+        transform: `rotate(${rotation}deg)`,
         '--w-units': wUnits,
         '--h-units': hUnits,
       }}
@@ -79,7 +123,7 @@ const SpellTemplate = ({
       <span
         className="tooltip"
         style={{
-          transform: `scale(${1 / scale}) ${hovered ? 'translateY(-6px)' : 'translateY(0)'}`,
+          transform: `scale(${1 / scale}) rotate(${-rotation}deg) ${hovered ? 'translateY(-6px)' : 'translateY(0)'}`,
         }}
       >
         <strong>{label}</strong>

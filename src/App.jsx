@@ -244,8 +244,15 @@ function App() {
       hUnits,
       x: 100,
       y: 100,
+      rotation: 0,
     };
     updateActiveMap((m) => ({ spells: [...m.spells, newSpell] }));
+  };
+
+  const handleSpellRotate = (id, newRotation) => {
+    updateActiveMap((m) => ({
+      spells: m.spells.map((s) => (s.id === id ? { ...s, rotation: newRotation } : s)),
+    }));
   };
 
   // Drag End handlers
@@ -374,9 +381,11 @@ function App() {
             hUnits={spell.hUnits}
             x={spell.x}
             y={spell.y}
+            rotation={spell.rotation ?? 0}
             scale={activeMap.scale}
             isSpacePressed={isSpacePressed}
             onDragEnd={handleSpellDragEnd}
+            onRotate={handleSpellRotate}
             onDelete={handleSpellDelete}
           />
         ))}
