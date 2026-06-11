@@ -17,8 +17,22 @@ const MapViewport = ({
   const [dragOver, setDragOver] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
   const containerRef = useRef(null);
+  const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
   const [urlInput, setUrlInput] = useState('');
+
+  // Refs to hold high-frequency updates without causing React re-renders during dragging
+  const currentPanRef = useRef({ x: panX, y: panY });
+  const currentScaleRef = useRef(scale);
+
+  // Sync ref values with incoming props
+  useEffect(() => {
+    currentPanRef.current = { x: panX, y: panY };
+  }, [panX, panY]);
+
+  useEffect(() => {
+    currentScaleRef.current = scale;
+  }, [scale]);
 
   const handleBrowseClick = () => {
     fileInputRef.current?.click();
@@ -136,7 +150,14 @@ const MapViewport = ({
       if (e.touches.length === 1 && initialTouches.length === 1) {
         const dx = e.touches[0].clientX - initialTouches[0].clientX;
         const dy = e.touches[0].clientY - initialTouches[0].clientY;
-        onPanChange(initialTouches[0].panX + dx, initialTouches[0].panY + dy);
+        const nextPanX = initialTouches[0].panX + dx;
+        const nextPanY = initialTouches[0].panY + dy;
+
+        // Perform direct DOM manipulation for smooth 60fps/120fps panning
+        if (canvasRef.current) {
+          canvasRef.current.style.transform = `translate(${nextPanX}px, ${nextPanY}px) scale(${currentScaleRef.current})`;
+        }
+        currentPanRef.current = { x: nextPanX, y: nextPanY };
       } else if (e.touches.length === 2 && initialTouches.length === 3) {
         const t1 = e.touches[0];
         const t2 = e.touches[1];
@@ -165,13 +186,23 @@ const MapViewport = ({
           (pivotY - initialTouches[2].panY) * (nextScale / startScale) +
           dy;
 
-        onZoomChange(nextScale, nextPanX, nextPanY);
+        // Perform direct DOM manipulation for smooth 60fps/120fps pinch-zooming
+        if (canvasRef.current) {
+          canvasRef.current.style.transform = `translate(${nextPanX}px, ${nextPanY}px) scale(${nextScale})`;
+        }
+        currentPanRef.current = { x: nextPanX, y: nextPanY };
+        currentScaleRef.current = nextScale;
       }
     };
 
     const handleTouchEnd = () => {
-      isTouchPanning = false;
-      onSaveState();
+      if (isTouchPanning) {
+        isTouchPanning = false;
+        // Update parent React state ONCE when the user releases their fingers
+        onPanChange(currentPanRef.current.x, currentPanRef.current.y);
+        onZoomChange(currentScaleRef.current, currentPanRef.current.x, currentPanRef.current.y);
+        onSaveState();
+      }
     };
 
     container.addEventListener('touchstart', handleTouchStart, { passive: false });
@@ -211,19 +242,26 @@ const MapViewport = ({
     e.preventDefault();
     setIsPanning(true);
 
-    const startX = e.clientX - panX;
-    const startY = e.clientY - panY;
+    const startX = e.clientX - currentPanRef.current.x;
+    const startY = e.clientY - currentPanRef.current.y;
 
     const handleMouseMove = (moveEvent) => {
       const nextPanX = moveEvent.clientX - startX;
       const nextPanY = moveEvent.clientY - startY;
-      onPanChange(nextPanX, nextPanY);
+
+      // Perform direct DOM manipulation for smooth 60fps/120fps panning
+      if (canvasRef.current) {
+        canvasRef.current.style.transform = `translate(${nextPanX}px, ${nextPanY}px) scale(${currentScaleRef.current})`;
+      }
+      currentPanRef.current = { x: nextPanX, y: nextPanY };
     };
 
     const handleMouseUp = () => {
       setIsPanning(false);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      // Update parent React state ONCE when the user releases their mouse click
+      onPanChange(currentPanRef.current.x, currentPanRef.current.y);
       onSaveState();
     };
 
@@ -309,6 +347,7 @@ const MapViewport = ({
 
       {mapImage && (
         <div
+          ref={canvasRef}
           id="battlemap-canvas"
           className="battlemap-canvas"
           style={{
