@@ -21,6 +21,22 @@ const Sidebar = ({
   onLoadMapUrl,
   mapImage,
 }) => {
+  // Collapsible section state
+  const [expandedSections, setExpandedSections] = useState({
+    maps: true,
+    grid: true,
+    creature: true,
+    spells: true,
+    help: false,
+  });
+
+  const toggleSection = (section) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
+
   // Spawn creature state
   const [tokenName, setTokenName] = useState('');
   const [tokenSize, setTokenSize] = useState('1');
@@ -94,451 +110,509 @@ const Sidebar = ({
       <div className="sidebar-content">
         <h2>DM Workspace</h2>
 
-        <div className="input-group">
-          <label>Battlemaps Manager</label>
-          <div className="map-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
-            {maps.map((map) => {
-              const isActive = map.id === activeMapId;
-              const isEditing = map.id === editingMapId;
-              return (
-                <div
-                  key={map.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    background: isActive ? 'rgba(168, 50, 50, 0.15)' : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${isActive ? 'var(--accent-color)' : 'rgba(255,255,255,0.08)'}`,
-                    borderRadius: '6px',
-                    padding: '4px 8px',
-                    boxShadow: isActive ? '0 0 10px rgba(168, 50, 50, 0.2)' : 'none',
-                  }}
-                >
-                  {isEditing ? (
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        if (editingName.trim()) {
-                          onRenameMap(map.id, editingName.trim());
-                          setEditingMapId(null);
-                        }
-                      }}
-                      style={{ display: 'flex', alignItems: 'center', gap: '4px', flexGrow: 1 }}
-                    >
-                      <input
-                        type="text"
-                        value={editingName}
-                        onChange={(e) => setEditingName(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Escape') {
+        {/* Section 1: Battlemaps Manager */}
+        <div className="sidebar-section">
+          <div
+            className={`sidebar-section-header ${expandedSections.maps ? '' : 'collapsed'}`}
+            onClick={() => toggleSection('maps')}
+          >
+            <h3>Battlemaps Manager</h3>
+            <span className="toggle-arrow">▼</span>
+          </div>
+          <div className={`sidebar-section-content ${expandedSections.maps ? '' : 'collapsed'}`}>
+            <div className="map-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+              {maps.map((map) => {
+                const isActive = map.id === activeMapId;
+                const isEditing = map.id === editingMapId;
+                return (
+                  <div
+                    key={map.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      background: isActive ? 'rgba(168, 50, 50, 0.15)' : 'rgba(255,255,255,0.03)',
+                      border: `1px solid ${isActive ? 'var(--accent-color)' : 'rgba(255,255,255,0.08)'}`,
+                      borderRadius: '6px',
+                      padding: '4px 8px',
+                      boxShadow: isActive ? '0 0 10px rgba(168, 50, 50, 0.2)' : 'none',
+                    }}
+                  >
+                    {isEditing ? (
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          if (editingName.trim()) {
+                            onRenameMap(map.id, editingName.trim());
                             setEditingMapId(null);
                           }
                         }}
-                        autoFocus
-                        style={{
-                          flexGrow: 1,
-                          padding: '2px 4px',
-                          fontSize: '0.85rem',
-                          background: 'rgba(0,0,0,0.4)',
-                          border: '1px solid var(--accent-color)',
-                        }}
-                      />
-                      <button
-                        type="submit"
-                        style={{
-                          width: 'auto',
-                          padding: '2px 4px',
-                          fontSize: '0.75rem',
-                          background: 'transparent',
-                          border: 'none',
-                          boxShadow: 'none',
-                          cursor: 'pointer',
-                          color: '#10b981',
-                        }}
-                        title="Save"
+                        style={{ display: 'flex', alignItems: 'center', gap: '4px', flexGrow: 1 }}
                       >
-                        ✔️
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditingMapId(null)}
-                        style={{
-                          width: 'auto',
-                          padding: '2px 4px',
-                          fontSize: '0.75rem',
-                          background: 'transparent',
-                          border: 'none',
-                          boxShadow: 'none',
-                          cursor: 'pointer',
-                          color: '#ef4444',
-                        }}
-                        title="Cancel"
-                      >
-                        ❌
-                      </button>
-                    </form>
-                  ) : (
-                    <>
-                      <div
-                        onClick={() => onSwitchMap(map.id)}
-                        style={{
-                          flexGrow: 1,
-                          cursor: 'pointer',
-                          fontSize: '0.85rem',
-                          fontWeight: isActive ? '600' : '400',
-                          color: isActive ? '#fff' : 'var(--text-secondary)',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          padding: '4px 0',
-                        }}
-                        title={map.name}
-                      >
-                        {map.name}
-                      </div>
-                      <button
-                        onClick={() => {
-                          setEditingMapId(map.id);
-                          setEditingName(map.name);
-                        }}
-                        style={{
-                          width: 'auto',
-                          padding: '2px 6px',
-                          fontSize: '0.75rem',
-                          background: 'transparent',
-                          border: 'none',
-                          boxShadow: 'none',
-                          color: 'var(--text-secondary)',
-                          cursor: 'pointer',
-                        }}
-                        title="Rename"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (maps.length <= 1) {
-                            alert('You must have at least one battlemap!');
-                            return;
-                          }
-                          if (window.confirm(`Delete battlemap "${map.name}"? This will also delete all of its tokens and spells.`)) {
-                            onDeleteMap(map.id);
-                          }
-                        }}
-                        disabled={maps.length <= 1}
-                        style={{
-                          width: 'auto',
-                          padding: '2px 6px',
-                          fontSize: '0.75rem',
-                          background: 'transparent',
-                          border: 'none',
-                          boxShadow: 'none',
-                          color: maps.length <= 1 ? 'var(--text-muted)' : '#ef4444',
-                          cursor: maps.length <= 1 ? 'not-allowed' : 'pointer',
-                          opacity: maps.length <= 1 ? 0.4 : 1,
-                        }}
-                        title="Delete"
-                      >
-                        🗑️
-                      </button>
-                    </>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Create Map Form */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const name = e.target.elements.newMapName.value.trim();
-              if (name) {
-                onCreateMap(name);
-                e.target.reset();
-              }
-            }}
-            style={{ display: 'flex', gap: '8px', marginTop: '4px' }}
-          >
-            <input
-              type="text"
-              name="newMapName"
-              placeholder="New Map Name"
-              required
-              style={{ flexGrow: 1, padding: '6px 8px', fontSize: '0.8rem' }}
-            />
-            <button type="submit" style={{ width: '40px', padding: '6px 0', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '1.25rem', fontWeight: 'bold' }}>
-              +
-            </button>
-          </form>
-
-          {/* Load Map Floorplan section */}
-          <div className="input-group" style={{ marginTop: '12px', gap: '4px' }}>
-            <label style={{ fontSize: '0.7rem', opacity: 0.85 }}>Load Map Layout</label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.04)',
-                  border: '1px dashed rgba(255, 255, 255, 0.15)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  padding: '6px 8px',
-                  fontSize: '0.8rem',
-                  cursor: 'pointer',
-                  borderRadius: '6px',
-                }}
-              >
-                📁 Choose File...
-              </button>
-              <input
-                type="file"
-                ref={fileInputRef}
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={handleSidebarFileChange}
-              />
-              <form onSubmit={handleSidebarUrlSubmit} style={{ display: 'flex', gap: '6px' }}>
-                <input
-                  type="text"
-                  placeholder="Paste image URL..."
-                  value={sidebarUrl}
-                  onChange={(e) => setSidebarUrl(e.target.value)}
-                  style={{ flexGrow: 1, padding: '6px 8px', fontSize: '0.8rem' }}
-                />
-                <button
-                  type="submit"
-                  disabled={!sidebarUrl.trim()}
-                  style={{
-                    width: 'auto',
-                    padding: '6px 10px',
-                    background: sidebarUrl.trim() ? 'var(--accent-color)' : 'rgba(255, 255, 255, 0.05)',
-                    color: sidebarUrl.trim() ? '#ffffff' : 'var(--text-muted)',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '0.8rem',
-                    cursor: sidebarUrl.trim() ? 'pointer' : 'not-allowed',
-                    opacity: sidebarUrl.trim() ? 1 : 0.6,
-                  }}
-                >
-                  Load
-                </button>
-              </form>
-            </div>
-          </div>
-
-          {/* Default Map Presets */}
-          <div className="input-group" style={{ marginTop: '12px', gap: '4px' }}>
-            <label style={{ fontSize: '0.7rem', opacity: 0.85 }}>Or Select Default Map</label>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(5, 1fr)',
-              gap: '6px',
-              marginTop: '2px'
-            }}>
-              {DEFAULT_MAPS.map((map) => {
-                const isActive = mapImage === map.path;
-                return (
-                  <button
-                    key={map.id}
-                    type="button"
-                    onClick={() => onLoadMapImage(map.path)}
-                    className={`sidebar-default-map-btn ${isActive ? 'active' : ''}`}
-                    title={map.name}
-                  >
-                    <img
-                      src={map.path}
-                      alt={map.name}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        display: 'block'
-                      }}
-                    />
-                    <div style={{
-                      position: 'absolute',
-                      bottom: '0',
-                      left: '0',
-                      right: '0',
-                      background: 'rgba(0,0,0,0.75)',
-                      color: '#fff',
-                      fontSize: '0.55rem',
-                      textAlign: 'center',
-                      padding: '2px 0',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      fontWeight: isActive ? '700' : '400'
-                    }}>
-                      {map.label}
-                    </div>
-                  </button>
+                        <input
+                          type="text"
+                          value={editingName}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Escape') {
+                              setEditingMapId(null);
+                            }
+                          }}
+                          autoFocus
+                          style={{
+                            flexGrow: 1,
+                            padding: '2px 4px',
+                            fontSize: '0.85rem',
+                            background: 'rgba(0,0,0,0.4)',
+                            border: '1px solid var(--accent-color)',
+                          }}
+                        />
+                        <button
+                          type="submit"
+                          style={{
+                            width: 'auto',
+                            padding: '2px 4px',
+                            fontSize: '0.75rem',
+                            background: 'transparent',
+                            border: 'none',
+                            boxShadow: 'none',
+                            cursor: 'pointer',
+                            color: '#10b981',
+                          }}
+                          title="Save"
+                        >
+                          ✔️
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingMapId(null)}
+                          style={{
+                            width: 'auto',
+                            padding: '2px 4px',
+                            fontSize: '0.75rem',
+                            background: 'transparent',
+                            border: 'none',
+                            boxShadow: 'none',
+                            cursor: 'pointer',
+                            color: '#ef4444',
+                          }}
+                          title="Cancel"
+                        >
+                          ❌
+                        </button>
+                      </form>
+                    ) : (
+                      <>
+                        <div
+                          onClick={() => onSwitchMap(map.id)}
+                          style={{
+                            flexGrow: 1,
+                            cursor: 'pointer',
+                            fontSize: '0.85rem',
+                            fontWeight: isActive ? '600' : '400',
+                            color: isActive ? '#fff' : 'var(--text-secondary)',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            padding: '4px 0',
+                          }}
+                          title={map.name}
+                        >
+                          {map.name}
+                        </div>
+                        <button
+                          onClick={() => {
+                            setEditingMapId(map.id);
+                            setEditingName(map.name);
+                          }}
+                          style={{
+                            width: 'auto',
+                            padding: '2px 6px',
+                            fontSize: '0.75rem',
+                            background: 'transparent',
+                            border: 'none',
+                            boxShadow: 'none',
+                            color: 'var(--text-secondary)',
+                            cursor: 'pointer',
+                          }}
+                          title="Rename"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (maps.length <= 1) {
+                              alert('You must have at least one battlemap!');
+                              return;
+                            }
+                            if (window.confirm(`Delete battlemap "${map.name}"? This will also delete all of its tokens and spells.`)) {
+                              onDeleteMap(map.id);
+                            }
+                          }}
+                          disabled={maps.length <= 1}
+                          style={{
+                            width: 'auto',
+                            padding: '2px 6px',
+                            fontSize: '0.75rem',
+                            background: 'transparent',
+                            border: 'none',
+                            boxShadow: 'none',
+                            color: maps.length <= 1 ? 'var(--text-muted)' : '#ef4444',
+                            cursor: maps.length <= 1 ? 'not-allowed' : 'pointer',
+                            opacity: maps.length <= 1 ? 0.4 : 1,
+                          }}
+                          title="Delete"
+                        >
+                          🗑️
+                        </button>
+                      </>
+                    )}
+                  </div>
                 );
               })}
             </div>
-          </div>
-        </div>
 
-        <hr className="divider" />
-
-        <div className="input-group">
-          <label htmlFor="grid-slider">Grid/Token Scale: {gridUnit}px</label>
-          <input
-            type="range"
-            id="grid-slider"
-            min="15"
-            max="360"
-            value={gridUnit}
-            onChange={(e) => setGridUnit(parseInt(e.target.value, 10))}
-          />
-        </div>
-
-        <div className="input-group">
-          <label>Map Controls</label>
-          <div className="zoom-controls">
-            <button onClick={onZoomIn}>In</button>
-            <button onClick={onZoomOut}>Out</button>
-            <button onClick={onZoomReset}>Reset</button>
-          </div>
-        </div>
-
-        <hr className="divider" />
-
-        <h3>Spawn Creature</h3>
-        <form onSubmit={handleSpawnToken} className="input-group" style={{ gap: '12px' }}>
-          <div className="input-row">
-            <div className="input-group">
-              <label htmlFor="token-name">Initials</label>
-              <input
-                type="text"
-                id="token-name"
-                placeholder="M"
-                maxLength={3}
-                value={tokenName}
-                onChange={(e) => setTokenName(e.target.value)}
-              />
-            </div>
-            <div className="input-group">
-              <label htmlFor="token-size">Size</label>
-              <select
-                id="token-size"
-                value={tokenSize}
-                onChange={(e) => setTokenSize(e.target.value)}
-              >
-                <option value="1">Medium (1x1)</option>
-                <option value="2">Large (2x2)</option>
-                <option value="3">Huge (3x3)</option>
-                <option value="4">Gargantuan (4x4)</option>
-                <option value="6">Colossal (6x6)</option>
-                <option value="8">Titanic (8x8)</option>
-                <option value="12">Behemoth (12x12)</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="input-group">
-            <label htmlFor="token-desc">Description</label>
-            <input
-              type="text"
-              id="token-desc"
-              placeholder="Manshoon, Evil Wizard"
-              value={tokenDesc}
-              onChange={(e) => setTokenDesc(e.target.value)}
-            />
-          </div>
-
-          <div className="input-group">
-            <label htmlFor="token-faction">Faction</label>
-            <select
-              id="token-faction"
-              value={tokenFaction}
-              onChange={(e) => setTokenFaction(e.target.value)}
+            {/* Create Map Form */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const name = e.target.elements.newMapName.value.trim();
+                if (name) {
+                  onCreateMap(name);
+                  e.target.reset();
+                }
+              }}
+              style={{ display: 'flex', gap: '8px', marginTop: '4px' }}
             >
-              <option value="friendly">Player / Ally (Green)</option>
-              <option value="hostile">Enemy (Red)</option>
-              <option value="neutral">Neutral (Orange)</option>
-            </select>
-          </div>
+              <input
+                type="text"
+                name="newMapName"
+                placeholder="New Map Name"
+                required
+                style={{ flexGrow: 1, padding: '6px 8px', fontSize: '0.8rem' }}
+              />
+              <button type="submit" style={{ width: '40px', padding: '6px 0', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '1.25rem', fontWeight: 'bold' }}>
+                +
+              </button>
+            </form>
 
-          <button type="submit">Spawn Token</button>
-        </form>
+            {/* Load Map Floorplan section */}
+            <div className="input-group" style={{ marginTop: '4px', gap: '4px' }}>
+              <label style={{ fontSize: '0.7rem', opacity: 0.85 }}>Load Map Layout</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    border: '1px dashed rgba(255, 255, 255, 0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    padding: '6px 8px',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    borderRadius: '6px',
+                  }}
+                >
+                  📁 Choose File...
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={handleSidebarFileChange}
+                />
+                <form onSubmit={handleSidebarUrlSubmit} style={{ display: 'flex', gap: '6px' }}>
+                  <input
+                    type="text"
+                    placeholder="Paste image URL..."
+                    value={sidebarUrl}
+                    onChange={(e) => setSidebarUrl(e.target.value)}
+                    style={{ flexGrow: 1, padding: '6px 8px', fontSize: '0.8rem' }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={!sidebarUrl.trim()}
+                    style={{
+                      width: 'auto',
+                      padding: '6px 10px',
+                      background: sidebarUrl.trim() ? 'var(--accent-color)' : 'rgba(255, 255, 255, 0.05)',
+                      color: sidebarUrl.trim() ? '#ffffff' : 'var(--text-muted)',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '0.8rem',
+                      cursor: sidebarUrl.trim() ? 'pointer' : 'not-allowed',
+                      opacity: sidebarUrl.trim() ? 1 : 0.6,
+                    }}
+                  >
+                    Load
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            {/* Default Map Presets */}
+            <div className="input-group" style={{ marginTop: '4px', gap: '4px' }}>
+              <label style={{ fontSize: '0.7rem', opacity: 0.85 }}>Or Select Default Map</label>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(5, 1fr)',
+                gap: '6px',
+                marginTop: '2px'
+              }}>
+                {DEFAULT_MAPS.map((map) => {
+                  const isActive = mapImage === map.path;
+                  return (
+                    <button
+                      key={map.id}
+                      type="button"
+                      onClick={() => onLoadMapImage(map.path)}
+                      className={`sidebar-default-map-btn ${isActive ? 'active' : ''}`}
+                      title={map.name}
+                    >
+                      <img
+                        src={map.path}
+                        alt={map.name}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          display: 'block'
+                        }}
+                      />
+                      <div style={{
+                        position: 'absolute',
+                        bottom: '0',
+                        left: '0',
+                        right: '0',
+                        background: 'rgba(0,0,0,0.75)',
+                        color: '#fff',
+                        fontSize: '0.55rem',
+                        textAlign: 'center',
+                        padding: '2px 0',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        fontWeight: isActive ? '700' : '400'
+                      }}>
+                        {map.label}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
 
         <hr className="divider" />
 
-        <h3>Spell AoE Templates</h3>
-        <form onSubmit={handleCastSpell} className="input-group" style={{ gap: '12px' }}>
-          <div className="input-row">
-            <div className="input-group">
-              <label htmlFor="spell-shape">Shape</label>
-              <select
-                id="spell-shape"
-                value={spellShape}
-                onChange={(e) => setSpellShape(e.target.value)}
-              >
-                <option value="circle">Radius / Sphere</option>
-                <option value="cube">Cube / Square</option>
-                <option value="cone">Cone (Face Down)</option>
-                <option value="line">Line (Wall / Beam)</option>
-              </select>
-            </div>
-            <div className="input-group">
-              <label htmlFor="spell-size">Size (Feet)</label>
-              <select
-                id="spell-size"
-                value={spellSize}
-                onChange={(e) => setSpellSize(e.target.value)}
-              >
-                <option value="5">5 ft</option>
-                <option value="10">10 ft</option>
-                <option value="15">15 ft</option>
-                <option value="20">20 ft</option>
-                <option value="30">30 ft</option>
-                <option value="40">40 ft</option>
-                <option value="60">60 ft</option>
-              </select>
-            </div>
+        {/* Section 2: Grid & Controls */}
+        <div className="sidebar-section">
+          <div
+            className={`sidebar-section-header ${expandedSections.grid ? '' : 'collapsed'}`}
+            onClick={() => toggleSection('grid')}
+          >
+            <h3>Grid & Zoom Controls</h3>
+            <span className="toggle-arrow">▼</span>
           </div>
-
-          <div className="input-row">
+          <div className={`sidebar-section-content ${expandedSections.grid ? '' : 'collapsed'}`}>
             <div className="input-group">
-              <label htmlFor="spell-element">Element / Type</label>
-              <select
-                id="spell-element"
-                value={spellElement}
-                onChange={(e) => setSpellElement(e.target.value)}
-              >
-                <option value="fire">Fire / Evocation</option>
-                <option value="cold">Cold / Ice</option>
-                <option value="acid">Acid / Poison</option>
-                <option value="lightning">Lightning / Force</option>
-              </select>
-            </div>
-            <div className="input-group">
-              <label htmlFor="spell-label">Spell Label</label>
+              <label htmlFor="grid-slider">Grid/Token Scale: {gridUnit}px</label>
               <input
-                type="text"
-                id="spell-label"
-                placeholder="Fireball"
-                value={spellLabel}
-                onChange={(e) => setSpellLabel(e.target.value)}
+                type="range"
+                id="grid-slider"
+                min="15"
+                max="360"
+                value={gridUnit}
+                onChange={(e) => setGridUnit(parseInt(e.target.value, 10))}
               />
             </div>
+
+            <div className="input-group">
+              <label>Map Controls</label>
+              <div className="zoom-controls">
+                <button onClick={onZoomIn}>In</button>
+                <button onClick={onZoomOut}>Out</button>
+                <button onClick={onZoomReset}>Reset</button>
+              </div>
+            </div>
           </div>
+        </div>
 
-          <button type="submit" className="spell-btn">Cast Template</button>
-        </form>
+        <hr className="divider" />
 
-        <div className="help-text">
-          • <strong>Align Grid:</strong> Adjust the top slider until tokens cleanly fit the map squares.<br />
-          • <strong>Pan view:</strong> Drag background (Touch) or hold <code>Spacebar</code> + drag (Desktop).<br />
-          • <strong>Zoom map:</strong> Pinch map (Touch) or scroll mouse wheel (Desktop).<br />
-          • <strong>Token Menu:</strong> Touch &amp; hold (Touch) or right-click token (Desktop).<br />
-          • <strong>Rotate spells:</strong> Tap spell (Touch) or hover + <code>Shift</code> + scroll / press <code>R</code> (Desktop).<br />
-          • <strong>Delete anything:</strong> Double-tap (Touch) or double-click item (Desktop).
+        {/* Section 3: Spawn Creature */}
+        <div className="sidebar-section">
+          <div
+            className={`sidebar-section-header ${expandedSections.creature ? '' : 'collapsed'}`}
+            onClick={() => toggleSection('creature')}
+          >
+            <h3>Spawn Creature</h3>
+            <span className="toggle-arrow">▼</span>
+          </div>
+          <div className={`sidebar-section-content ${expandedSections.creature ? '' : 'collapsed'}`}>
+            <form onSubmit={handleSpawnToken} className="input-group" style={{ gap: '12px' }}>
+              <div className="input-row">
+                <div className="input-group">
+                  <label htmlFor="token-name">Initials</label>
+                  <input
+                    type="text"
+                    id="token-name"
+                    placeholder="M"
+                    maxLength={3}
+                    value={tokenName}
+                    onChange={(e) => setTokenName(e.target.value)}
+                  />
+                </div>
+                <div className="input-group">
+                  <label htmlFor="token-size">Size</label>
+                  <select
+                    id="token-size"
+                    value={tokenSize}
+                    onChange={(e) => setTokenSize(e.target.value)}
+                  >
+                    <option value="1">Medium (1x1)</option>
+                    <option value="2">Large (2x2)</option>
+                    <option value="3">Huge (3x3)</option>
+                    <option value="4">Gargantuan (4x4)</option>
+                    <option value="6">Colossal (6x6)</option>
+                    <option value="8">Titanic (8x8)</option>
+                    <option value="12">Behemoth (12x12)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="input-group">
+                <label htmlFor="token-desc">Description</label>
+                <input
+                  type="text"
+                  id="token-desc"
+                  placeholder="Manshoon, Evil Wizard"
+                  value={tokenDesc}
+                  onChange={(e) => setTokenDesc(e.target.value)}
+                />
+              </div>
+
+              <div className="input-group">
+                <label htmlFor="token-faction">Faction</label>
+                <select
+                  id="token-faction"
+                  value={tokenFaction}
+                  onChange={(e) => setTokenFaction(e.target.value)}
+                >
+                  <option value="friendly">Player / Ally (Green)</option>
+                  <option value="hostile">Enemy (Red)</option>
+                  <option value="neutral">Neutral (Orange)</option>
+                </select>
+              </div>
+
+              <button type="submit">Spawn Token</button>
+            </form>
+          </div>
+        </div>
+
+        <hr className="divider" />
+
+        {/* Section 4: Spell AoE Templates */}
+        <div className="sidebar-section">
+          <div
+            className={`sidebar-section-header ${expandedSections.spells ? '' : 'collapsed'}`}
+            onClick={() => toggleSection('spells')}
+          >
+            <h3>Spell AoE Templates</h3>
+            <span className="toggle-arrow">▼</span>
+          </div>
+          <div className={`sidebar-section-content ${expandedSections.spells ? '' : 'collapsed'}`}>
+            <form onSubmit={handleCastSpell} className="input-group" style={{ gap: '12px' }}>
+              <div className="input-row">
+                <div className="input-group">
+                  <label htmlFor="spell-shape">Shape</label>
+                  <select
+                    id="spell-shape"
+                    value={spellShape}
+                    onChange={(e) => setSpellShape(e.target.value)}
+                  >
+                    <option value="circle">Radius / Sphere</option>
+                    <option value="cube">Cube / Square</option>
+                    <option value="cone">Cone (Face Down)</option>
+                    <option value="line">Line (Wall / Beam)</option>
+                  </select>
+                </div>
+                <div className="input-group">
+                  <label htmlFor="spell-size">Size (Feet)</label>
+                  <select
+                    id="spell-size"
+                    value={spellSize}
+                    onChange={(e) => setSpellSize(e.target.value)}
+                  >
+                    <option value="5">5 ft</option>
+                    <option value="10">10 ft</option>
+                    <option value="15">15 ft</option>
+                    <option value="20">20 ft</option>
+                    <option value="30">30 ft</option>
+                    <option value="40">40 ft</option>
+                    <option value="60">60 ft</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="input-row">
+                <div className="input-group">
+                  <label htmlFor="spell-element">Element / Type</label>
+                  <select
+                    id="spell-element"
+                    value={spellElement}
+                    onChange={(e) => setSpellElement(e.target.value)}
+                  >
+                    <option value="fire">Fire / Evocation</option>
+                    <option value="cold">Cold / Ice</option>
+                    <option value="acid">Acid / Poison</option>
+                    <option value="lightning">Lightning / Force</option>
+                  </select>
+                </div>
+                <div className="input-group">
+                  <label htmlFor="spell-label">Spell Label</label>
+                  <input
+                    type="text"
+                    id="spell-label"
+                    placeholder="Fireball"
+                    value={spellLabel}
+                    onChange={(e) => setSpellLabel(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <button type="submit" className="spell-btn">Cast Template</button>
+            </form>
+          </div>
+        </div>
+
+        <hr className="divider" />
+
+        {/* Section 5: Help & Controls (Collapsed by default) */}
+        <div className="sidebar-section" style={{ marginTop: 'auto' }}>
+          <div
+            className={`sidebar-section-header ${expandedSections.help ? '' : 'collapsed'}`}
+            onClick={() => toggleSection('help')}
+            style={{ background: 'rgba(255,255,255,0.01)' }}
+          >
+            <h3>How to Use / Help</h3>
+            <span className="toggle-arrow">▼</span>
+          </div>
+          <div className={`sidebar-section-content ${expandedSections.help ? '' : 'collapsed'}`}>
+            <div className="help-text" style={{ border: 'none', background: 'transparent', padding: '0', marginTop: '0' }}>
+              • <strong>Align Grid:</strong> Adjust the scale slider until tokens fit the map.<br />
+              • <strong>Pan view:</strong> Hold <code>Spacebar</code> + drag background.<br />
+              • <strong>Zoom map:</strong> Scroll mouse wheel or pinch map.<br />
+              • <strong>Token Menu:</strong> Right-click token or touch &amp; hold.<br />
+              • <strong>Rotate spells:</strong> Hover + <code>Shift</code> + scroll or press <code>R</code>.<br />
+              • <strong>Delete anything:</strong> Double-click or double-tap.
+            </div>
+          </div>
         </div>
       </div>
     </aside>

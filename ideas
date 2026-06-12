@@ -1,0 +1,5 @@
+1. Sidebar has collapsible sections as it is a bit busy
+2. Peer-to-peer viewer mode
+3. middle button pan
+4. when loading a map set the zoom so the map is fully visible and the pan so that it is centred
+5. The ability to draw lines, gently constrained to be on a grid matching the token positions
