@@ -239,7 +239,9 @@ const MapViewport = ({
   };
 
   const handleMouseDown = (e) => {
-    if (!isSpacePressed) return;
+    const isMiddleClick = e.button === 1;
+    if (!isSpacePressed && !isMiddleClick) return;
+    
     e.preventDefault();
     setIsPanning(true);
 
@@ -271,11 +273,12 @@ const MapViewport = ({
   };
 
   const isPanningClass = isSpacePressed ? 'panning-mode' : '';
+  const isDraggingClass = isPanning ? 'panning-active' : '';
 
   return (
     <div
       ref={containerRef}
-      className={`map-container ${dragOver ? 'drag-over' : ''} ${isPanningClass}`}
+      className={`map-container ${dragOver ? 'drag-over' : ''} ${isPanningClass} ${isDraggingClass}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}

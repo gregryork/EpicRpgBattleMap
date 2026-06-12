@@ -786,4 +786,10 @@ body.panning-mode .map-container:active {
   pointer-events: none;
 }
 
+/* Active Panning cursor */
+.map-container.panning-active {
+  cursor: grabbing !important;
+}
+
+
 
