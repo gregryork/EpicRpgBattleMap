@@ -10,6 +10,8 @@ const MapViewport = ({
   isSpacePressed,
   onMapDropped,
   onLoadUrl,
+  shouldFitActiveMap,
+  onResetFit,
   onPanChange,
   onZoomChange,
   onSaveState,
@@ -238,6 +240,37 @@ const MapViewport = ({
     }
   };
 
+  const handleImageLoad = (e) => {
+    if (!shouldFitActiveMap) return;
+
+    const img = e.target;
+    const imgWidth = img.naturalWidth;
+    const imgHeight = img.naturalHeight;
+
+    const container = containerRef.current;
+    if (!container || !imgWidth || !imgHeight) return;
+
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+
+    const margin = 10;
+    const availableWidth = containerWidth - margin * 2;
+    const availableHeight = containerHeight - margin * 2;
+
+    const scaleX = availableWidth / imgWidth;
+    const scaleY = availableHeight / imgHeight;
+    let fitScale = Math.min(scaleX, scaleY);
+
+    fitScale = Math.max(0.08, Math.min(6, fitScale));
+
+    const fitPanX = margin;
+    const fitPanY = margin;
+
+    onZoomChange(fitScale, fitPanX, fitPanY);
+    onSaveState();
+    onResetFit();
+  };
+
   const handleMouseDown = (e) => {
     const isMiddleClick = e.button === 1;
     if (!isSpacePressed && !isMiddleClick) return;
@@ -411,6 +444,7 @@ const MapViewport = ({
             className="map-img"
             src={mapImage}
             alt="Battlemap"
+            onLoad={handleImageLoad}
           />
           {children}
         </div>

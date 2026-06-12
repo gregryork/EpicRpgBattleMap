@@ -71,6 +71,7 @@ function App() {
   const [maps, setMaps] = useState(initialState.maps);
   const [activeMapId, setActiveMapId] = useState(initialState.activeMapId);
   const [mapImage, setMapImage] = useState('');
+  const [shouldFitActiveMap, setShouldFitActiveMap] = useState(false);
 
   // UI state
   const [isSpacePressed, setIsSpacePressed] = useState(false);
@@ -237,6 +238,8 @@ function App() {
     if (mapImage && mapImage.startsWith('blob:')) {
       URL.revokeObjectURL(mapImage);
     }
+    
+    setShouldFitActiveMap(true);
     
     if (typeof file === 'string') {
       setMapImage(file);
@@ -457,6 +460,8 @@ function App() {
         isSpacePressed={isSpacePressed}
         onMapDropped={handleMapDropped}
         onLoadUrl={handleMapUrlSubmit}
+        shouldFitActiveMap={shouldFitActiveMap}
+        onResetFit={() => setShouldFitActiveMap(false)}
         onPanChange={(x, y) => updateActiveMap(() => ({ panX: x, panY: y }))}
         onZoomChange={(s, x, y) =>
           updateActiveMap(() => ({ scale: s, panX: x, panY: y }))
